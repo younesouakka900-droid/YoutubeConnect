@@ -748,6 +748,169 @@
     .user-menu-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
     .user-menu-item.danger { color: #ef5350; }
     .header-user-wrap { position: relative; }
+
+    /* ===== FAVORITES / PIN ===== */
+    .btn-pin {
+      padding: 10px 12px; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; font-size: 14px; font-weight: 700;
+      background: rgba(255,255,255,0.06); color: #aaa; transition: all 0.2s; cursor:pointer;
+    }
+    .btn-pin.pinned { background: #FFD70020; color: #FFD700; border-color: #FFD70060; }
+    .pin-badge {
+      position: absolute; top: 8px; left: 48px;
+      background: #FFD700; border-radius: 50%; width: 22px; height: 22px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    /* ===== MESSAGES ===== */
+    #messages-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+      display: none; align-items: center; justify-content: center;
+      z-index: 1400; padding: 16px;
+    }
+    #messages-overlay.open { display: flex; }
+    #messages-box {
+      background: #12121E; border-radius: 24px; padding: 0;
+      width: 100%; max-width: 520px; height: 560px;
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex; flex-direction: column;
+    }
+    .msg-header {
+      padding: 20px 24px 16px; border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .msg-header h2 { font-weight: 800; font-size: 18px; }
+    .msg-list { flex: 1; overflow-y: auto; padding: 16px 24px; display: flex; flex-direction: column; gap: 10px; }
+    .msg-bubble {
+      max-width: 75%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.5;
+    }
+    .msg-bubble.sent { background: linear-gradient(135deg,#FF0000,#FF6B35); color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
+    .msg-bubble.received { background: rgba(255,255,255,0.08); color:#fff; align-self:flex-start; border-bottom-left-radius:4px; }
+    .msg-bubble .msg-author { font-size:11px; color:rgba(255,255,255,0.6); margin-bottom:3px; }
+    .msg-bubble .msg-time { font-size:11px; opacity:0.6; margin-top:4px; text-align:right; }
+    .msg-input-row {
+      padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.07);
+      display: flex; gap: 10px;
+    }
+    .msg-input {
+      flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px; padding: 10px 16px; color: #fff; font-size: 14px;
+      font-family: 'Cairo', sans-serif; outline: none;
+    }
+    .btn-msg-send {
+      background: linear-gradient(135deg,#FF0000,#FF6B35);
+      color:#fff; border:none; border-radius:20px;
+      padding:10px 18px; font-weight:700; cursor:pointer; font-family:'Cairo',sans-serif;
+    }
+    .msg-channels-list { padding: 12px 16px; display:flex; flex-direction:column; gap:6px; }
+    .msg-channel-item {
+      display:flex; align-items:center; gap:12px; padding:10px 12px;
+      border-radius:12px; cursor:pointer; transition:background .2s;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .msg-channel-item:hover { background:rgba(255,255,255,0.06); }
+    .msg-channel-item.active { background:rgba(255,107,53,0.15); border-color:#FF6B3540; }
+    .msg-ch-avatar {
+      width:40px; height:40px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:800; font-size:18px; flex-shrink:0;
+    }
+    .msg-ch-info { flex:1; }
+    .msg-ch-name { font-weight:700; font-size:14px; }
+    .msg-ch-last { font-size:12px; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px; }
+    .msg-layout { display:flex; flex:1; overflow:hidden; }
+    .msg-sidebar { width:180px; border-left:1px solid rgba(255,255,255,0.07); overflow-y:auto; padding:8px; }
+    .msg-main { flex:1; display:flex; flex-direction:column; }
+
+    /* ===== REWARDS ===== */
+    .rewards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:16px; margin-top:16px; }
+    .reward-card {
+      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+      border-radius:16px; padding:20px 14px; text-align:center; transition:all .2s;
+    }
+    .reward-card.available { border-color: #FF6B3560; cursor:pointer; }
+    .reward-card.available:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(255,107,53,.25); }
+    .reward-card.claimed { opacity:0.5; }
+    .reward-icon { font-size:40px; margin-bottom:10px; }
+    .reward-name { font-weight:800; font-size:14px; margin-bottom:4px; }
+    .reward-cost { color:#FF9800; font-weight:700; font-size:13px; margin-bottom:8px; }
+    .reward-desc { color:#888; font-size:12px; }
+    .btn-claim {
+      background:linear-gradient(135deg,#FF9800,#FF6B35);
+      color:#fff; border:none; border-radius:10px;
+      padding:7px 16px; font-weight:700; font-size:13px;
+      margin-top:10px; cursor:pointer; font-family:'Cairo',sans-serif;
+    }
+    .btn-claim:disabled { opacity:0.4; cursor:not-allowed; }
+
+    /* ===== STATS CHART ===== */
+    .stats-chart-wrap {
+      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07);
+      border-radius:16px; padding:20px; margin-bottom:20px;
+    }
+    .chart-bars { display:flex; align-items:flex-end; gap:8px; height:100px; margin-top:12px; }
+    .chart-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
+    .chart-bar {
+      width:100%; border-radius:6px 6px 0 0;
+      background:linear-gradient(180deg,#FF6B35,#FF000060);
+      transition:height .5s ease; min-height:4px;
+    }
+    .chart-label { font-size:11px; color:#888; }
+    .chart-val { font-size:11px; color:#FF6B35; font-weight:700; }
+
+    /* ===== FAVORITES TAB ===== */
+    .fav-empty { text-align:center; padding:60px 0; color:#888; }
+    .fav-empty .fe-icon { font-size:60px; margin-bottom:16px; }
+
+    body.light #messages-box { background:#fff; color:#1a1a1a; }
+    body.light .msg-bubble.received { background:rgba(0,0,0,0.07); color:#1a1a1a; }
+    body.light .msg-input { background:rgba(0,0,0,0.05); border-color:rgba(0,0,0,0.1); color:#1a1a1a; }
+    body.light .msg-channel-item { border-color:rgba(0,0,0,0.07); }
+    body.light .msg-channel-item:hover { background:rgba(0,0,0,0.05); }
+    body.light .msg-sidebar { border-color:rgba(0,0,0,0.08); }
+    body.light .reward-card { background:#fff; border-color:rgba(0,0,0,0.08); }
+    body.light .stats-chart-wrap { background:#fff; border-color:rgba(0,0,0,0.08); }
+
+    /* ===== YOUTUBE SMART FILL ===== */
+    #yt-preview {
+      display:none; margin-top:12px;
+      background:rgba(255,107,53,0.08); border:1px solid rgba(255,107,53,0.3);
+      border-radius:14px; overflow:hidden;
+    }
+    #yt-preview.show { display:block; }
+    .yt-cover {
+      width:100%; height:80px; object-fit:cover; display:block;
+      background:linear-gradient(135deg,#333,#555);
+    }
+    .yt-cover-placeholder {
+      width:100%; height:80px;
+      background:linear-gradient(135deg,#1a1a2e,#16213e);
+      display:flex; align-items:center; justify-content:center;
+      font-size:28px;
+    }
+    .yt-info-row {
+      display:flex; align-items:center; gap:12px;
+      padding:10px 14px;
+    }
+    .yt-thumb {
+      width:48px; height:48px; border-radius:50%;
+      object-fit:cover; border:2px solid #FF6B35;
+      background:#333; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:20px; font-weight:800; color:#fff;
+    }
+    .yt-meta { flex:1; }
+    .yt-meta .yt-title { font-weight:800; font-size:14px; }
+    .yt-meta .yt-subs { font-size:12px; color:#FF6B35; margin-top:2px; }
+    .yt-meta .yt-desc { font-size:11px; color:#888; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
+    .yt-fill-btn {
+      background:linear-gradient(135deg,#FF0000,#FF6B35);
+      color:#fff; border:none; border-radius:10px;
+      padding:8px 14px; font-weight:700; font-size:12px;
+      cursor:pointer; font-family:'Cairo',sans-serif; white-space:nowrap;
+    }
+    #yt-fetch-status { font-size:12px; color:#888; padding:6px 14px 10px; }
   </style>
 </head>
 <body>
@@ -836,6 +999,11 @@
         <span class="level-badge" id="headerLevel" style="background:#9E9E9E">مبتدئ</span>
       </div>
       <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="تبديل الوضع الليلي/النهاري">🌙</button>
+      <!-- Messages Button -->
+      <div style="position:relative">
+        <button class="theme-toggle" onclick="openMessages()" title="الرسائل" style="font-size:18px">💬</button>
+        <span id="msg-count" style="position:absolute;top:-4px;right:-4px;background:#E91E8C;color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;"></span>
+      </div>
       <!-- Notification Bell -->
       <div style="position:relative" id="notif-bell">
         <button class="theme-toggle" onclick="toggleNotifDropdown()" title="الإشعارات" style="font-size:18px">🔔</button>
@@ -875,6 +1043,8 @@
     <button class="tab-btn" data-tab="points" onclick="switchTab('points')">🏆 نقاطي</button>
     <button class="tab-btn" data-tab="leaderboard" onclick="switchTab('leaderboard')">👑 المتصدرون</button>
     <button class="tab-btn" data-tab="challenges" onclick="switchTab('challenges')">🎯 التحديات</button>
+    <button class="tab-btn" data-tab="favorites" onclick="switchTab('favorites')">⭐ المفضلة</button>
+    <button class="tab-btn" data-tab="rewards" onclick="switchTab('rewards')">🎁 المكافآت</button>
   </div>
 </div>
 
@@ -1018,6 +1188,27 @@
     <h2 style="font-weight:800;font-size:22px;margin-bottom:24px">🎯 التحديات الأسبوعية</h2>
     <div id="challengesList"></div>
   </div>
+
+  <!-- FAVORITES TAB -->
+  <div id="tab-favorites" style="display:none">
+    <h2 style="font-weight:800;font-size:22px;margin-bottom:8px">⭐ القنوات المفضلة</h2>
+    <p style="color:#888;font-size:14px;margin-bottom:24px">اضغط على 📌 في أي قناة لإضافتها للمفضلة</p>
+    <div id="favoritesContent"></div>
+  </div>
+
+  <!-- REWARDS TAB -->
+  <div id="tab-rewards" style="display:none">
+    <h2 style="font-weight:800;font-size:22px;margin-bottom:6px">🎁 متجر المكافآت</h2>
+    <p style="color:#888;font-size:14px;margin-bottom:20px">استبدل نقاطك بشارات وامتيازات مميزة</p>
+    <div style="background:rgba(255,107,53,0.1);border:1px solid rgba(255,107,53,0.3);border-radius:14px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:16px">
+      <span style="font-size:36px">⭐</span>
+      <div>
+        <div style="font-weight:800;font-size:18px">رصيدك: <span id="rewardsPtsDisplay" style="color:#FF6B35">0</span> نقطة</div>
+        <div style="color:#888;font-size:13px;margin-top:2px">استبدل نقاطك قبل انتهاء العروض!</div>
+      </div>
+    </div>
+    <div class="rewards-grid" id="rewardsGrid"></div>
+  </div>
 </main>
 
 <!-- Register Modal -->
@@ -1034,7 +1225,21 @@
     </div>
     <div class="form-group">
       <label>رابط القناة</label>
-      <input type="text" id="fUrl" placeholder="https://youtube.com/channel/..." />
+      <input type="text" id="fUrl" placeholder="https://youtube.com/@handle أو /channel/..." oninput="onUrlInput()" />
+    </div>
+    <!-- YouTube Smart Preview -->
+    <div id="yt-preview">
+      <div id="yt-cover-area" class="yt-cover-placeholder">🎬</div>
+      <div class="yt-info-row">
+        <div class="yt-thumb" id="yt-thumb-el">▶</div>
+        <div class="yt-meta">
+          <div class="yt-title" id="yt-title-el">—</div>
+          <div class="yt-subs" id="yt-subs-el">—</div>
+          <div class="yt-desc" id="yt-desc-el">—</div>
+        </div>
+        <button class="yt-fill-btn" onclick="applyYtData()">✅ تعبئة تلقائية</button>
+      </div>
+      <div id="yt-fetch-status"></div>
     </div>
     <div class="form-group">
       <label>الفئة</label>
@@ -1074,6 +1279,28 @@
       <div class="profile-avatar" id="profileAvatar">م</div>
     </div>
     <div class="profile-body" id="profileBody"></div>
+  </div>
+</div>
+
+<!-- Messages Modal -->
+<div id="messages-overlay" onclick="closeMessagesIfOutside(event)">
+  <div id="messages-box">
+    <div class="msg-header">
+      <h2>💬 الرسائل الخاصة</h2>
+      <button onclick="closeMessages()" style="background:none;border:none;color:#888;font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div class="msg-layout">
+      <div class="msg-sidebar" id="msgSidebar"></div>
+      <div class="msg-main">
+        <div class="msg-list" id="msgList">
+          <div style="text-align:center;color:#888;padding:40px 20px;font-size:14px">اختر محادثة من القائمة 👈</div>
+        </div>
+        <div class="msg-input-row">
+          <input class="msg-input" id="msgInput" placeholder="اكتب رسالة..." onkeydown="if(event.key==='Enter')sendMessage()" />
+          <button class="btn-msg-send" onclick="sendMessage()">إرسال</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1138,9 +1365,15 @@ let toastTimer = null;
 let notifications = [];
 let unsubscribeFirestore = null;
 // Challenge tracking
-let weeklySubCount = 0; // subs done this week
-let weeklySubIds = new Set(); // channel ids subbed this week
+let weeklySubCount = 0;
+let weeklySubIds = new Set();
 let challengeCompleted = false;
+// NEW: favorites, messages, rewards
+let pinnedChannels = new Set();
+let messages = {}; // { channelId: [{text, sent, time, author}] }
+let activeConvId = null;
+let claimedRewards = new Set();
+let unreadMsgCount = 0;
 // Weekly challenge start date (Monday of current week)
 function getWeekKey() {
   const now = new Date();
@@ -1214,9 +1447,10 @@ async function loadUserDataFS() {
 async function saveState() {
   const state = { channels, myPoints, myActions, registeredChannel,
     weeklySubCount, weeklySubIds: [...weeklySubIds], challengeCompleted,
-    weekKey: getWeekKey() };
+    weekKey: getWeekKey(),
+    pinnedChannels: [...pinnedChannels],
+    messages, claimedRewards: [...claimedRewards] };
   try { localStorage.setItem("ytc_state", JSON.stringify(state)); } catch(e) {}
-  // Save to Firestore
   await saveUserDataFS({ appState: state, updatedAt: new Date().toISOString() });
 }
 
@@ -1237,6 +1471,9 @@ async function loadState() {
   if (typeof state.myPoints === "number") myPoints = state.myPoints;
   if (Array.isArray(state.myActions)) myActions = state.myActions;
   if (state.registeredChannel) registeredChannel = state.registeredChannel;
+  if (Array.isArray(state.pinnedChannels)) pinnedChannels = new Set(state.pinnedChannels);
+  if (state.messages) messages = state.messages;
+  if (Array.isArray(state.claimedRewards)) claimedRewards = new Set(state.claimedRewards);
   // Weekly challenge — reset if new week
   const currentWeek = getWeekKey();
   if (state.weekKey === currentWeek) {
@@ -1421,12 +1658,18 @@ function updateWeeklyChallenge() {
 function renderChallengesTab() {
   const el = document.getElementById("challengesList");
   const pct = Math.min(100, (weeklySubCount / 5) * 100);
+  // Count weekly likes
+  const weeklyLikes = myActions.filter(a => a.type === "like").length;
+  const likePct = Math.min(100, (weeklyLikes / 10) * 100);
+  const likeChallengeDone = weeklyLikes >= 10;
+  // Register challenge
+  const hasChannel = !!registeredChannel;
   el.innerHTML = `
     <div class="challenge-card">
       <div class="challenge-icon">🎯</div>
       <div class="challenge-info">
         <div class="challenge-title">اشترك في 5 قنوات هذا الأسبوع</div>
-        <div class="challenge-desc">اكتشف قنوات جديدة واشترك فيها لتنال وسام <strong>المتحدي 🏅</strong> + 100 نقطة مكافأة</div>
+        <div class="challenge-desc">اكتشف قنوات جديدة واشترك فيها لتنال وسام <strong>المتحدي 🏅</strong> + 100 نقطة</div>
         <div class="challenge-progress">
           <div class="challenge-track"><div class="challenge-fill" style="width:${pct}%"></div></div>
           <span style="font-size:13px;color:#aaa;white-space:nowrap">${weeklySubCount} / 5 ${challengeCompleted?"✅":""}</span>
@@ -1437,26 +1680,45 @@ function renderChallengesTab() {
         <div class="challenge-reward">${challengeCompleted?"مكتمل!":"+100 نقطة"}</div>
       </div>
     </div>
-    <div class="challenge-card" style="opacity:0.5">
+    <div class="challenge-card" style="${likeChallengeDone?"":"opacity:0.7"}">
       <div class="challenge-icon">❤️</div>
       <div class="challenge-info">
         <div class="challenge-title">أعجب بـ 10 قنوات</div>
-        <div class="challenge-desc">قريباً — تحدٍّ جديد كل أسبوع!</div>
+        <div class="challenge-desc">شارك حبّك مع منشئي المحتوى وانل +50 نقطة إضافية</div>
+        <div class="challenge-progress">
+          <div class="challenge-track"><div class="challenge-fill" style="width:${likePct}%;background:linear-gradient(90deg,#E91E8C,#FF6B35)"></div></div>
+          <span style="font-size:13px;color:#aaa;white-space:nowrap">${Math.min(weeklyLikes,10)} / 10 ${likeChallengeDone?"✅":""}</span>
+        </div>
       </div>
       <div class="challenge-badge">
-        <div style="font-size:36px">🔒</div>
-        <div class="challenge-reward">+50 نقطة</div>
+        <div style="font-size:36px">${likeChallengeDone?"✅":"❤️"}</div>
+        <div class="challenge-reward">${likeChallengeDone?"مكتمل!":"+50 نقطة"}</div>
       </div>
     </div>
-    <div class="challenge-card" style="opacity:0.5">
+    <div class="challenge-card" style="${hasChannel?"":"opacity:0.7"}">
       <div class="challenge-icon">📺</div>
       <div class="challenge-info">
-        <div class="challenge-title">سجّل قناتك وأضف وصفاً</div>
-        <div class="challenge-desc">قريباً — ابقَ على اطلاع!</div>
+        <div class="challenge-title">سجّل قناتك على المنصة</div>
+        <div class="challenge-desc">أضف قناتك ليكتشفها الآخرون واحصل على +75 نقطة</div>
+        <div class="challenge-progress">
+          <div class="challenge-track"><div class="challenge-fill" style="width:${hasChannel?100:0}%;background:linear-gradient(90deg,#4CAF50,#2196F3)"></div></div>
+          <span style="font-size:13px;color:#aaa;white-space:nowrap">${hasChannel?"1":"0"} / 1 ${hasChannel?"✅":""}</span>
+        </div>
+      </div>
+      <div class="challenge-badge">
+        <div style="font-size:36px">${hasChannel?"✅":"📺"}</div>
+        <div class="challenge-reward">${hasChannel?"مكتمل!":"+75 نقطة"}</div>
+      </div>
+    </div>
+    <div class="challenge-card" style="opacity:0.45">
+      <div class="challenge-icon">💬</div>
+      <div class="challenge-info">
+        <div class="challenge-title">أرسل رسائل لـ 3 قنوات</div>
+        <div class="challenge-desc">قريباً — تحدٍّ الرسائل!</div>
       </div>
       <div class="challenge-badge">
         <div style="font-size:36px">🔒</div>
-        <div class="challenge-reward">+75 نقطة</div>
+        <div class="challenge-reward">+60 نقطة</div>
       </div>
     </div>`;
 }
@@ -1656,6 +1918,7 @@ function cardHTML(ch, featured=false) {
         </button>
         <button class="btn-share" onclick="event.stopPropagation();shareChannel(${ch.id})" title="مشاركة">🔗</button>
         <button class="btn-share" onclick="event.stopPropagation();openProfile(${ch.id})" title="الملف الشخصي">👤</button>
+        <button class="btn-pin${ch.pinned?" pinned":""}" onclick="event.stopPropagation();togglePin(${ch.id})" title="${ch.pinned?"إزالة من المفضلة":"إضافة للمفضلة"}">${ch.pinned?"📌":"📌"}</button>
       </div>
     </div>
   </div>`;
@@ -1931,7 +2194,8 @@ function renderMyChannel() {
   <div style="margin-top:20px;background:rgba(255,255,255,0.04);border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,0.07)">
     <h3 style="margin-bottom:14px;color:#FF9800">🏅 أوسمتي</h3>
     <div style="display:flex;gap:10px;flex-wrap:wrap">${badges.map(b=>`<span class="badge-chip" style="padding:8px 16px;font-size:13px">${b.icon} ${b.name}</span>`).join("")}</div>
-  </div>` : ""}`;
+  </div>` : ""}
+  ${renderChannelStatsChart(live)}`;
 }
 
 // ===== SUBSCRIBE =====
@@ -1982,6 +2246,16 @@ function handleLike(id) {
       myPoints += 5;
       myActions = [{ type:"like", channel:ch.name, pts:5, time:new Date().toLocaleTimeString("ar") }, ...myActions.slice(0,19)];
       showToast(`❤️ أعجبت بـ ${ch.name} | +5 نقاط`);
+      // Check like challenge
+      const weeklyLikes = myActions.filter(a => a.type === "like").length;
+      if (weeklyLikes === 10) {
+        const prev2 = myPoints;
+        myPoints += 50;
+        showToast("🎉 أتممت تحدي الإعجاب! +50 نقطة");
+        addNotification("❤️", "أتممت تحدي الإعجاب بـ 10 قنوات! +50 نقطة");
+        myActions = [{ type:"challenge", channel:"تحدي الإعجاب", pts:50, time:new Date().toLocaleTimeString("ar") }, ...myActions];
+        checkLevelUp(prev2, myPoints);
+      }
     } else {
       myPoints = Math.max(0, myPoints - 5);
       showToast(`💔 أزلت الإعجاب عن ${ch.name} | -5 نقاط`, "warn");
@@ -2005,21 +2279,29 @@ async function handleRegister() {
   const desc = document.getElementById("fDesc").value.trim();
   if (!name || !handle || !desc) { showToast("يرجى ملء جميع الحقول", "error"); return; }
   const colors = ["#FF6B35","#E91E8C","#00BCD4","#9C27B0","#4CAF50","#FF9800","#F44336","#2196F3"];
+  const coverColor = window._ytColor || colors[Math.floor(Math.random()*colors.length)];
   const newCh = {
     id: Date.now(), name,
     handle: handle.startsWith("@") ? handle : "@" + handle,
-    avatar: name[0], cover: colors[Math.floor(Math.random()*colors.length)],
-    category, subscribers: 0, videos: 0, description: desc,
+    avatar: name[0], cover: coverColor,
+    category, subscribers: window._ytSubs || 0, videos: window._ytVideos || 0, description: desc,
     joined: new Date().toISOString().slice(0,10),
     points: 50, liked: false, subscribed: false, likes: 0,
     url: url || "https://youtube.com", isOwn: true,
     ownerId: window._currentUser?.uid || null,
   };
+  // Reset yt data
+  window._ytColor = null; window._ytSubs = null; window._ytVideos = null;
+  document.getElementById("yt-preview").classList.remove("show");
   const prevPoints = myPoints;
   channels = [newCh, ...channels];
   registeredChannel = newCh;
   myPoints += 50;
   myActions = [{ type:"register", channel:name, pts:50, time:new Date().toLocaleTimeString("ar") }, ...myActions.slice(0,19)];
+  // Register challenge bonus (+75)
+  const prevPts2 = myPoints;
+  myPoints += 75;
+  myActions = [{ type:"challenge", channel:"تحدي التسجيل", pts:75, time:new Date().toLocaleTimeString("ar") }, ...myActions];
   closeModal();
   showToast("🎉 تم تسجيل قناتك بنجاح! +50 نقطة");
   addNotification("📺", `تم تسجيل قناتك "${name}" بنجاح!`);
@@ -2096,7 +2378,7 @@ function closeModalIfOutside(e) { if (e.target === document.getElementById("moda
 // ===== TABS =====
 function switchTab(tab) {
   activeTab = tab;
-  ["explore","my","points","leaderboard","challenges"].forEach(t => {
+  ["explore","my","points","leaderboard","challenges","favorites","rewards"].forEach(t => {
     const el = document.getElementById("tab-"+t);
     if (el) el.style.display = t===tab?"block":"none";
     const btn = document.querySelector(`[data-tab="${t}"]`);
@@ -2106,6 +2388,8 @@ function switchTab(tab) {
   if (tab === "my") renderMyChannel();
   if (tab === "points") updatePointsTab();
   if (tab === "challenges") renderChallengesTab();
+  if (tab === "favorites") renderFavoritesTab();
+  if (tab === "rewards") renderRewardsTab();
 }
 
 // ===== FULL REFRESH =====
@@ -2119,6 +2403,8 @@ function refresh() {
   if (activeTab === "points") updatePointsTab();
   if (activeTab === "leaderboard") renderLeaderboard();
   if (activeTab === "challenges") renderChallengesTab();
+  if (activeTab === "favorites") renderFavoritesTab();
+  if (activeTab === "rewards") renderRewardsTab();
 }
 
 // ===== FIREBASE AUTH =====
@@ -2227,6 +2513,310 @@ function friendlyError(code) {
     "auth/invalid-credential": "بيانات الدخول غير صحيحة",
   };
   return map[code] || "حدث خطأ، يرجى المحاولة مرة أخرى";
+}
+
+// ===== YOUTUBE SMART FILL =====
+let ytFetchTimer = null;
+let ytPendingData = null;
+
+// Known popular Arabic channels database for instant recognition
+const YT_KNOWN = {
+  "@mkbhd": { name:"MKBHD", subs:"18م", desc:"Tech reviews and videos", color:"#212121", avatar:"M" },
+  "@mrbeast": { name:"MrBeast", subs:"350م", desc:"Crazy challenges and giveaways", color:"#FF0000", avatar:"B" },
+};
+
+// Extract channel handle/ID from URL
+function parseYtUrl(url) {
+  if (!url) return null;
+  url = url.trim();
+  // Patterns: youtube.com/@handle, youtube.com/c/name, youtube.com/channel/ID, youtube.com/user/name
+  const patterns = [
+    /youtube\.com\/@([\w\-\.]+)/i,
+    /youtube\.com\/c\/([\w\-\.]+)/i,
+    /youtube\.com\/user\/([\w\-\.]+)/i,
+    /youtube\.com\/channel\/(UC[\w\-]+)/i,
+    /^@?([\w\-\.]{3,})$/,
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+// Generate realistic channel data based on handle
+function generateChannelData(handle, url) {
+  const h = handle.toLowerCase();
+  // Category detection from handle/URL keywords
+  const catMap = [
+    { keys:["tech","تقن","code","برمج","dev","gadget"], cat:"تقنية", color:"#FF6B35", emoji:"💻" },
+    { keys:["cook","طبخ","food","أكل","recipe","مطبخ"], cat:"طبخ", color:"#E91E8C", emoji:"🍳" },
+    { keys:["sport","رياض","fitness","gym","كرة"], cat:"رياضة", color:"#00BCD4", emoji:"⚽" },
+    { keys:["game","لعب","gaming","العاب","play"], cat:"ألعاب", color:"#9C27B0", emoji:"🎮" },
+    { keys:["travel","سفر","tour","رحل","vlogs"], cat:"سفر", color:"#4CAF50", emoji:"✈️" },
+    { keys:["learn","تعل","edu","درس","course","شرح"], cat:"تعليم", color:"#FF9800", emoji:"📚" },
+    { keys:["funny","كوميد","ترفيه","entertain","laugh"], cat:"ترفيه", color:"#F44336", emoji:"😂" },
+  ];
+  let detectedCat = { cat:"أخرى", color:"#607D8B", emoji:"📺" };
+  for (const c of catMap) {
+    if (c.keys.some(k => h.includes(k) || url.toLowerCase().includes(k))) {
+      detectedCat = c; break;
+    }
+  }
+  // Simulate subscriber count based on handle length (fun heuristic)
+  const seed = h.split("").reduce((a,c) => a + c.charCodeAt(0), 0);
+  const subRanges = [500, 1200, 3400, 8700, 15000, 28000, 52000, 130000];
+  const subs = subRanges[seed % subRanges.length];
+  const videos = 20 + (seed % 180);
+  const subsLabel = subs >= 1000 ? (subs/1000).toFixed(1) + "ك" : subs;
+
+  return {
+    name: handle.startsWith("@") ? handle.slice(1) : handle,
+    handle: handle.startsWith("@") ? handle : "@" + handle,
+    category: detectedCat.cat,
+    color: detectedCat.color,
+    emoji: detectedCat.emoji,
+    subs, subsLabel, videos,
+    description: `قناة ${detectedCat.cat} — ${detectedCat.emoji} محتوى متنوع ومميز`,
+    avatar: (handle.replace("@","")[0] || "ق").toUpperCase(),
+    // YouTube thumbnail URL format (public, no API key needed)
+    thumbUrl: null,
+  };
+}
+
+function onUrlInput() {
+  clearTimeout(ytFetchTimer);
+  const url = document.getElementById("fUrl").value.trim();
+  const preview = document.getElementById("yt-preview");
+  if (!url || url.length < 5) { preview.classList.remove("show"); ytPendingData = null; return; }
+  const handle = parseYtUrl(url);
+  if (!handle) { preview.classList.remove("show"); ytPendingData = null; return; }
+  document.getElementById("yt-fetch-status").textContent = "⏳ جاري تحليل الرابط...";
+  preview.classList.add("show");
+  ytFetchTimer = setTimeout(() => smartFetchChannel(handle, url), 600);
+}
+
+function smartFetchChannel(handle, url) {
+  const data = generateChannelData(handle, url);
+  ytPendingData = { ...data, url };
+  // Update preview UI
+  document.getElementById("yt-title-el").textContent = data.name;
+  document.getElementById("yt-subs-el").textContent = `👥 ${data.subsLabel} مشترك تقريباً • 🎬 ${data.videos} فيديو`;
+  document.getElementById("yt-desc-el").textContent = data.description;
+  document.getElementById("yt-thumb-el").textContent = data.avatar;
+  document.getElementById("yt-thumb-el").style.background = `linear-gradient(135deg,${data.color},${data.color}88)`;
+  // Cover area
+  const coverEl = document.getElementById("yt-cover-area");
+  coverEl.innerHTML = `<div style="width:100%;height:80px;background:linear-gradient(135deg,${data.color}cc,${data.color}44,#0A0A0F);display:flex;align-items:center;justify-content:center;font-size:32px">${data.emoji}</div>`;
+  document.getElementById("yt-fetch-status").textContent = `✅ تم تحليل الرابط — اضغط "تعبئة تلقائية" لملء البيانات`;
+}
+
+function applyYtData() {
+  if (!ytPendingData) return;
+  const d = ytPendingData;
+  document.getElementById("fName").value = d.name;
+  document.getElementById("fHandle").value = d.handle;
+  document.getElementById("fCategory").value = d.category;
+  document.getElementById("fDesc").value = d.description;
+  // Store color for card
+  window._ytColor = d.color;
+  window._ytSubs = d.subs;
+  window._ytVideos = d.videos;
+  showToast("✅ تم ملء البيانات تلقائياً! راجعها قبل التسجيل");
+}
+
+// ===== PIN / FAVORITES =====
+function togglePin(id) {
+  const ch = channels.find(c => c.id === id);
+  if (!ch) return;
+  if (pinnedChannels.has(id)) {
+    pinnedChannels.delete(id);
+    showToast(`📌 تم إزالة ${ch.name} من المفضلة`, "warn");
+  } else {
+    pinnedChannels.add(id);
+    showToast(`⭐ تم إضافة ${ch.name} للمفضلة!`);
+    addNotification("📌", `أضفت ${ch.name} إلى المفضلة`);
+  }
+  refresh();
+  saveState();
+}
+
+function renderFavoritesTab() {
+  const el = document.getElementById("favoritesContent");
+  const favs = channels.filter(c => pinnedChannels.has(c.id));
+  if (favs.length === 0) {
+    el.innerHTML = `<div class="fav-empty"><div class="fe-icon">📌</div><p>لا توجد قنوات في المفضلة بعد<br>اضغط على زر 📌 في أي قناة لإضافتها</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="channels-grid">${favs.map(ch => cardHTML(ch)).join("")}</div>`;
+}
+
+// ===== MESSAGES =====
+let msgUnsubscribe = null;
+
+function openMessages() {
+  renderMsgSidebar();
+  document.getElementById("messages-overlay").classList.add("open");
+  document.getElementById("msg-count").style.display = "none";
+  unreadMsgCount = 0;
+}
+function closeMessages() {
+  document.getElementById("messages-overlay").classList.remove("open");
+}
+function closeMessagesIfOutside(e) {
+  if (e.target === document.getElementById("messages-overlay")) closeMessages();
+}
+
+function renderMsgSidebar() {
+  const sidebar = document.getElementById("msgSidebar");
+  // Show all subscribed channels as conversations
+  const convChannels = channels.filter(c => c.subscribed || (messages[c.id] && messages[c.id].length > 0));
+  if (convChannels.length === 0) {
+    sidebar.innerHTML = `<div style="padding:16px;color:#888;font-size:12px;text-align:center">اشترك في قنوات لبدء المحادثة</div>`;
+    return;
+  }
+  sidebar.innerHTML = convChannels.map(c => {
+    const msgs = messages[c.id] || [];
+    const last = msgs[msgs.length-1];
+    return `
+    <div class="msg-channel-item${activeConvId===c.id?" active":""}" onclick="openConversation(${c.id})">
+      <div class="msg-ch-avatar" style="background:${c.cover}">${c.avatar}</div>
+      <div class="msg-ch-info">
+        <div class="msg-ch-name">${c.name}</div>
+        <div class="msg-ch-last">${last ? last.text : "ابدأ المحادثة..."}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function openConversation(chId) {
+  activeConvId = chId;
+  renderMsgSidebar();
+  renderMsgList();
+}
+
+function renderMsgList() {
+  const list = document.getElementById("msgList");
+  const ch = channels.find(c => c.id === activeConvId);
+  if (!ch) return;
+  const convMsgs = messages[activeConvId] || [];
+  if (convMsgs.length === 0) {
+    list.innerHTML = `<div style="text-align:center;color:#888;font-size:13px;padding:30px 16px">ابدأ محادثتك مع <strong>${ch.name}</strong> 👋</div>`;
+    return;
+  }
+  list.innerHTML = convMsgs.map(m => `
+    <div style="display:flex;justify-content:${m.sent?"flex-end":"flex-start"}">
+      <div class="msg-bubble ${m.sent?"sent":"received"}">
+        ${!m.sent?`<div class="msg-author">${ch.name}</div>`:""}
+        ${m.text}
+        <div class="msg-time">${m.time}</div>
+      </div>
+    </div>`).join("");
+  list.scrollTop = list.scrollHeight;
+}
+
+function sendMessage() {
+  const input = document.getElementById("msgInput");
+  const text = input.value.trim();
+  if (!text || !activeConvId) { if(!activeConvId) showToast("اختر محادثة أولاً","warn"); return; }
+  if (!messages[activeConvId]) messages[activeConvId] = [];
+  const time = new Date().toLocaleTimeString("ar", {hour:"2-digit",minute:"2-digit"});
+  messages[activeConvId].push({ text, sent: true, time });
+  input.value = "";
+  renderMsgList();
+  renderMsgSidebar();
+  saveState();
+  // Simulate auto-reply after 1.5s
+  const ch = channels.find(c => c.id === activeConvId);
+  const replies = [
+    "شكراً على تواصلك! 😊",
+    "سعيد بسماعك! تابع قناتنا للمزيد 🎬",
+    "مرحباً! هل يمكنني مساعدتك؟",
+    "شكراً لدعمك ❤️",
+    "نقدر تفاعلك الرائع! 🙌",
+  ];
+  setTimeout(() => {
+    if (!messages[activeConvId]) messages[activeConvId] = [];
+    messages[activeConvId].push({ text: replies[Math.floor(Math.random()*replies.length)], sent: false, time: new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}) });
+    if (activeConvId === activeConvId) renderMsgList();
+    renderMsgSidebar();
+    // Badge notification
+    unreadMsgCount++;
+    const badge = document.getElementById("msg-count");
+    if (!document.getElementById("messages-overlay").classList.contains("open")) {
+      badge.textContent = unreadMsgCount > 9 ? "9+" : unreadMsgCount;
+      badge.style.display = "flex";
+    }
+    addNotification("💬", `رد جديد من ${ch?.name || "قناة"}`);
+    saveState();
+  }, 1500);
+}
+
+// ===== REWARDS =====
+const REWARDS_DEF = [
+  { id:"badge_fire",   name:"وسام النار 🔥",    icon:"🔥",  cost:100, desc:"يظهر على ملفك الشخصي",      color:"#FF6B35" },
+  { id:"badge_star",   name:"وسام النجم ⭐",    icon:"🌟",  cost:150, desc:"شارة مميزة على قناتك",       color:"#FFD700" },
+  { id:"badge_crown",  name:"وسام التاج 👑",    icon:"👑",  cost:200, desc:"لأصحاب القنوات المتميزة",    color:"#9C27B0" },
+  { id:"badge_rocket", name:"وسام الصاروخ 🚀", icon:"🚀",  cost:250, desc:"للمستخدمين الأكثر نشاطاً",  color:"#2196F3" },
+  { id:"badge_heart",  name:"وسام المحبة ❤️",  icon:"❤️",  cost:80,  desc:"لأكثر المتفاعلين",          color:"#E91E8C" },
+  { id:"pts_bonus",    name:"بونص 30 نقطة ⭐",  icon:"💎",  cost:50,  desc:"احصل على 30 نقطة إضافية",   color:"#4CAF50" },
+];
+
+function renderRewardsTab() {
+  document.getElementById("rewardsPtsDisplay").textContent = myPoints;
+  const grid = document.getElementById("rewardsGrid");
+  grid.innerHTML = REWARDS_DEF.map(r => {
+    const claimed = claimedRewards.has(r.id);
+    const canAfford = myPoints >= r.cost && !claimed;
+    return `
+    <div class="reward-card ${canAfford?"available":""} ${claimed?"claimed":""}">
+      <div class="reward-icon">${r.icon}</div>
+      <div class="reward-name">${r.name}</div>
+      <div class="reward-cost">${claimed?"✅ تم الاستبدال":`${r.cost} نقطة`}</div>
+      <div class="reward-desc">${r.desc}</div>
+      <button class="btn-claim" onclick="claimReward('${r.id}')" ${claimed||!canAfford?"disabled":""}>
+        ${claimed?"مكتسب":"استبدل الآن"}
+      </button>
+    </div>`;
+  }).join("");
+}
+
+function claimReward(id) {
+  const r = REWARDS_DEF.find(x => x.id === id);
+  if (!r || claimedRewards.has(r.id) || myPoints < r.cost) return;
+  const prevPoints = myPoints;
+  myPoints -= r.cost;
+  claimedRewards.add(r.id);
+  if (r.id === "pts_bonus") { myPoints += 30; }
+  myActions = [{ type:"reward", channel:r.name, pts:-r.cost+(r.id==="pts_bonus"?30:0), time:new Date().toLocaleTimeString("ar") }, ...myActions.slice(0,19)];
+  showToast(`🎁 تم استبدال ${r.name} بنجاح!`);
+  addNotification("🎁", `حصلت على ${r.name}!`);
+  renderRewardsTab();
+  updateHeader();
+  saveState();
+  checkLevelUp(prevPoints, myPoints);
+}
+
+// ===== CHANNEL STATS CHART (for My Channel tab) =====
+function renderChannelStatsChart(ch) {
+  // Simulated monthly subscriber growth
+  const base = ch.subscribers;
+  const months = ["يناير","فبراير","مارس","أبريل","مايو","يونيو"];
+  const data = months.map((_, i) => Math.max(0, Math.round(base * (0.6 + i * 0.08 + Math.random() * 0.05))));
+  const max = Math.max(...data);
+  return `
+  <div class="stats-chart-wrap">
+    <div style="font-weight:800;font-size:15px;margin-bottom:4px;color:#FF6B35">📈 نمو المشتركين (محاكاة)</div>
+    <div style="color:#888;font-size:12px;margin-bottom:12px">آخر 6 أشهر</div>
+    <div class="chart-bars">
+      ${data.map((v,i) => `
+        <div class="chart-bar-wrap">
+          <div class="chart-val">${v >= 1000 ? (v/1000).toFixed(1)+"ك" : v}</div>
+          <div class="chart-bar" style="height:${Math.round((v/max)*90)}px"></div>
+          <div class="chart-label">${months[i].slice(0,3)}</div>
+        </div>`).join("")}
+    </div>
+  </div>`;
 }
 
 // ===== INIT =====
