@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>يوتيوب كنكت</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: #0A0A0F;
+      color: #fff;
+      font-family: 'Cairo', 'Segoe UI', sans-serif;
+      direction: rtl;
+    }
+    select option { background: #1A1A2E; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0A0A0F; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+    button { cursor: pointer; font-family: 'Cairo', 'Segoe UI', sans-serif; }
+    input, select, textarea {
+      font-family: 'Cairo', 'Segoe UI', sans-serif;
+      outline: none;
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateX(50%) translateY(-20px); }
+      to   { opacity: 1; transform: translateX(50%) translateY(0); }
+    }
+    /* Header */
+    #header {
+      background: linear-gradient(135deg, #0D0D1A 0%, #1A0A2E 50%, #0A1628 100%);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      padding: 0 24px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, #FF0000, #FF6B35);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; color: #fff;
+    }
+    .logo-text { font-weight: 800; font-size: 20px; letter-spacing: -0.5px; }
+    .logo-text span { color: #FF6B35; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .points-badge {
+      background: rgba(255,255,255,0.07);
+      border-radius: 20px; padding: 6px 16px;
+      display: flex; align-items: center; gap: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .points-badge .pts-num { font-weight: 700; }
+    .points-badge .pts-label { color: #aaa; font-size: 13px; }
+    .level-badge {
+      color: #000; border-radius: 10px;
+      padding: 2px 8px; font-size: 12px; font-weight: 700;
+    }
+    .btn-register-header {
+      background: linear-gradient(135deg, #FF0000, #FF6B35);
+      color: #fff; border: none; border-radius: 20px;
+      padding: 8px 20px; font-weight: 700; font-size: 14px;
+    }
+    /* Tabs */
+    #tabs {
+      background: #0D0D1A;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .tabs-inner { max-width: 1100px; margin: 0 auto; display: flex; padding: 0 24px; overflow-x: auto; }
+    .tab-btn {
+      background: none; border: none; color: #888;
+      padding: 16px 20px; font-weight: 700; font-size: 14px;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .tab-btn.active { color: #FF6B35; border-bottom-color: #FF6B35; }
+    /* Main */
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+    /* Progress Banner */
+    .progress-banner {
+      background: linear-gradient(135deg, rgba(255,107,53,0.15), rgba(156,39,176,0.15));
+      border: 1px solid rgba(255,107,53,0.3);
+      border-radius: 16px; padding: 20px 24px; margin-bottom: 32px;
+      display: flex; align-items: center; gap: 20; flex-wrap: wrap;
+    }
+    .progress-banner .banner-icon { font-size: 40px; }
+    .progress-banner .banner-info { flex: 1; min-width: 200px; }
+    .progress-track {
+      flex: 1; height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px; overflow: hidden;
+    }
+    .progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+    .progress-row { display: flex; align-items: center; gap: 12px; }
+    .banner-pts-info { font-size: 13px; color: #aaa; text-align: center; line-height: 1.8; }
+    /* Filters */
+    .filters-row {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .cat-filters { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; }
+    .cat-btn {
+      border: none; border-radius: 20px; padding: 7px 16px;
+      font-size: 13px; font-weight: 600;
+      transition: all 0.2s; color: #aaa;
+      background: rgba(255,255,255,0.06);
+    }
+    .cat-btn.active { color: #fff; }
+    .sort-select {
+      background: rgba(255,255,255,0.06); color: #fff;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px; padding: 7px 16px; font-size: 13px;
+    }
+    /* Grid */
+    .channels-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    /* Card */
+    .channel-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 20px; overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .channel-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+    .card-cover { height: 80px; position: relative; }
+    .card-cat-badge {
+      position: absolute; top: 12px; left: 12px;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+      border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600;
+    }
+    .card-own-badge {
+      position: absolute; top: 12px; right: 12px;
+      background: #FF6B35; border-radius: 20px; padding: 4px 12px;
+      font-size: 12px; font-weight: 700;
+    }
+    .card-avatar-wrap { padding: 0 20px; }
+    .card-avatar {
+      width: 60px; height: 60px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 26px; margin-top: -30px;
+      border: 3px solid #0A0A0F;
+    }
+    .card-body { padding: 12px 20px 0; }
+    .card-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .card-name { font-weight: 800; font-size: 17px; }
+    .card-level-badge {
+      color: #000; border-radius: 8px;
+      padding: 2px 8px; font-size: 11px; font-weight: 700;
+    }
+    .card-handle { color: #888; font-size: 13px; margin-bottom: 8px; }
+    .card-desc {
+      color: #aaa; font-size: 13px; line-height: 1.6;
+      margin-bottom: 16px;
+      display: -webkit-box; -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .card-stats { display: flex; gap: 16px; margin-bottom: 16px; }
+    .card-stat { text-align: center; flex: 1; }
+    .card-stat .stat-icon { font-size: 16px; }
+    .card-stat .stat-val { font-weight: 800; font-size: 15px; }
+    .card-stat .stat-label { font-size: 11px; color: #888; }
+    .card-actions { display: flex; gap: 10px; padding-bottom: 20px; }
+    .btn-sub {
+      flex: 1; padding: 10px;
+      color: #fff; border: none; border-radius: 10px;
+      font-weight: 700; font-size: 14px; transition: all 0.2s;
+    }
+    .btn-sub.active { background: rgba(255,255,255,0.08); }
+    .btn-sub.inactive { background: linear-gradient(135deg, #FF0000, #FF6B35); }
+    .btn-like {
+      padding: 10px 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; font-size: 14px;
+      font-weight: 700; display: flex; align-items: center; gap: 6px;
+      transition: all 0.2s; background: rgba(255,255,255,0.06); color: #aaa;
+    }
+    .btn-like.liked {
+      background: #E91E8C20; color: #E91E8C;
+      border-color: #E91E8C60;
+    }
+    /* Toast */
+    #toast {
+      position: fixed; top: 24px; right: 50%; transform: translateX(50%);
+      color: #fff; padding: 12px 28px; border-radius: 40px; z-index: 9999;
+      font-size: 15px; font-weight: 700; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      animation: fadeInDown 0.3s ease;
+      display: none;
+    }
+    /* Modal */
+    #modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+      display: none; align-items: center; justify-content: center;
+      z-index: 1000; padding: 16px;
+    }
+    #modal-overlay.open { display: flex; }
+    #modal-box {
+      background: #12121E; border-radius: 24px; padding: 32px;
+      width: 100%; max-width: 480px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    #modal-box h2 { font-weight: 800; font-size: 22px; margin-bottom: 24px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; margin-bottom: 6px; font-size: 13px; color: #aaa; }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+      padding: 10px 14px; color: #fff; font-size: 14px;
+    }
+    .form-group textarea { resize: vertical; }
+    .btn-submit {
+      background: linear-gradient(135deg, #FF0000, #FF6B35);
+      color: #fff; border: none; border-radius: 12px;
+      padding: 14px; font-weight: 800; font-size: 16px;
+      width: 100%; margin-top: 8px;
+    }
+    /* Points Page */
+    .points-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+    .points-card { border-radius: 20px; padding: 28px; text-align: center; }
+    .points-big { font-size: 48px; font-weight: 900; }
+    .points-sub { color: #aaa; font-size: 16px; margin-top: 4px; }
+    .earn-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+    .earn-card { border-radius: 14px; padding: 16px; text-align: center; }
+    .earn-card .earn-icon { font-size: 32px; margin-bottom: 8px; }
+    .earn-card .earn-pts { font-size: 22px; font-weight: 800; }
+    .earn-card .earn-label { font-size: 13px; color: #aaa; margin-top: 4px; }
+    .activity-log { display: flex; flex-direction: column; gap: 10px; }
+    .activity-item {
+      display: flex; align-items: center; gap: 12px;
+      background: rgba(255,255,255,0.03); border-radius: 10px; padding: 10px 16px;
+    }
+    .activity-item .ai-icon { font-size: 22px; }
+    .activity-item .ai-text { flex: 1; font-size: 14px; }
+    .activity-item .ai-pts { color: #4CAF50; font-weight: 700; }
+    .activity-item .ai-time { color: #666; font-size: 12px; }
+    /* Leaderboard */
+    .lb-list { display: flex; flex-direction: column; gap: 12px; }
+    .lb-item {
+      display: flex; align-items: center; gap: 16px;
+      border-radius: 14px; padding: 16px 20px;
+    }
+    .lb-rank {
+      width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 18px; flex-shrink: 0;
+    }
+    .lb-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 18px; flex-shrink: 0;
+    }
+    .lb-info { flex: 1; }
+    .lb-info .lb-name { font-weight: 700; font-size: 16px; }
+    .lb-info .lb-handle { font-size: 13px; color: #888; }
+    .lb-subs { text-align: center; min-width: 80px; }
+    .lb-subs .lb-subs-val { font-weight: 800; font-size: 18px; color: #FF6B35; }
+    .lb-subs .lb-subs-label { font-size: 12px; color: #888; }
+    .lb-level-badge { color: #000; border-radius: 12px; padding: 4px 12px; font-weight: 700; font-size: 12px; }
+    /* My Channel empty */
+    .empty-state { text-align: center; padding: 80px 0; }
+    .empty-state .empty-icon { font-size: 80px; margin-bottom: 20px; }
+    .empty-state h2 { font-size: 24px; font-weight: 800; margin-bottom: 12px; }
+    .empty-state p { color: #888; margin-bottom: 28px; }
+    .btn-register-now {
+      background: linear-gradient(135deg, #FF0000, #FF6B35);
+      color: #fff; border: none; border-radius: 24px;
+      padding: 14px 36px; font-weight: 800; font-size: 16px;
+    }
+    /* My channel stats */
+    .stats-grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+    .stat-card { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 16px; text-align: center; }
+    .stat-card .sc-icon { font-size: 28px; margin-bottom: 6px; }
+    .stat-card .sc-val { font-size: 22px; font-weight: 800; color: #FF6B35; }
+    .stat-card .sc-label { font-size: 13px; color: #888; }
+    @media (max-width: 600px) {
+      .points-grid-2, .earn-grid, .stats-grid-3 { grid-template-columns: 1fr; }
+      .header-right .points-badge { display: none; }
+      .tab-btn { padding: 12px 10px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Header -->
+<header id="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">▶</div>
+      <span class="logo-text">يوتيوب <span>كنكت</span></span>
+    </div>
+    <div class="header-right">
+      <div class="points-badge" id="pointsBadge">
+        <span style="font-size:18px">⭐</span>
+        <span class="pts-num" id="headerPts" style="color:#9E9E9E">0</span>
+        <span class="pts-label">نقطة</span>
+        <span class="level-badge" id="headerLevel" style="background:#9E9E9E">مبتدئ</span>
+      </div>
+      <button class="btn-register-header" onclick="openModal()">+ سجّل قناتك</button>
+    </div>
+  </div>
+</header>
+
+<!-- Tabs -->
+<div id="tabs">
+  <div class="tabs-inner">
+    <button class="tab-btn active" data-tab="explore" onclick="switchTab('explore')">🔍 استكشاف</button>
+    <button class="tab-btn" data-tab="my" onclick="switchTab('my')">📺 قناتي</button>
+    <button class="tab-btn" data-tab="points" onclick="switchTab('points')">🏆 نقاطي</button>
+    <button class="tab-btn" data-tab="leaderboard" onclick="switchTab('leaderboard')">👑 المتصدرون</button>
+  </div>
+</div>
+
+<main>
+  <!-- EXPLORE TAB -->
+  <div id="tab-explore">
+    <!-- Progress Banner -->
+    <div class="progress-banner" id="progressBanner" style="display:flex">
+      <div class="banner-icon">🚀</div>
+      <div class="banner-info">
+        <div style="font-weight:700;font-size:16px;margin-bottom:6px">
+          مرحباً! أنت في مستوى <span id="bannerLevelName" style="color:#9E9E9E">مبتدئ</span>
+        </div>
+        <div class="progress-row">
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill" style="width:0%;background:linear-gradient(90deg,#9E9E9E,#FF6B35)"></div>
+          </div>
+          <span style="font-size:13px;color:#aaa;white-space:nowrap" id="progressLabel">0 / 100 نقطة</span>
+        </div>
+      </div>
+      <div class="banner-pts-info">
+        <div>اشتراك = <span style="color:#4CAF50">+15</span></div>
+        <div>إعجاب = <span style="color:#2196F3">+5</span></div>
+        <div>تسجيل قناة = <span style="color:#FF9800">+50</span></div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-row">
+      <div class="cat-filters" id="catFilters"></div>
+      <select class="sort-select" id="sortSelect" onchange="applySort()">
+        <option>جديد</option>
+        <option>الأكثر اشتراكاً</option>
+        <option>الأكثر إعجاباً</option>
+      </select>
+    </div>
+
+    <!-- Grid -->
+    <div class="channels-grid" id="channelsGrid"></div>
+  </div>
+
+  <!-- MY CHANNEL TAB -->
+  <div id="tab-my" style="display:none">
+    <div id="myChannelContent"></div>
+  </div>
+
+  <!-- POINTS TAB -->
+  <div id="tab-points" style="display:none">
+    <div class="points-grid-2">
+      <div class="points-card" id="pointsTotalCard" style="background:rgba(158,158,158,0.1);border:1px solid rgba(158,158,158,0.2)">
+        <div style="font-size:56px;margin-bottom:8px">⭐</div>
+        <div class="points-big" id="pointsBig" style="color:#9E9E9E">0</div>
+        <div class="points-sub">إجمالي نقاطك</div>
+      </div>
+      <div class="points-card" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)">
+        <div style="font-size:56px;margin-bottom:8px">🏅</div>
+        <div style="font-size:32px;font-weight:900" id="pointsLevelName" style="color:#9E9E9E">مبتدئ</div>
+        <div class="points-sub">مستواك الحالي</div>
+        <div style="margin-top:12px;font-size:13px;color:#888" id="pointsNextInfo">100 نقطة للمستوى التالي</div>
+      </div>
+    </div>
+
+    <div style="background:rgba(255,255,255,0.04);border-radius:20px;padding:24px;margin-bottom:28px">
+      <h3 style="margin-bottom:20px;font-weight:800">🎯 كيف تكسب النقاط؟</h3>
+      <div class="earn-grid">
+        <div class="earn-card" style="background:#4CAF5015;border:1px solid #4CAF5030">
+          <div class="earn-icon">🔔</div>
+          <div class="earn-pts" style="color:#4CAF50">+15</div>
+          <div class="earn-label">الاشتراك في قناة</div>
+        </div>
+        <div class="earn-card" style="background:#2196F315;border:1px solid #2196F330">
+          <div class="earn-icon">❤️</div>
+          <div class="earn-pts" style="color:#2196F3">+5</div>
+          <div class="earn-label">الإعجاب بقناة</div>
+        </div>
+        <div class="earn-card" style="background:#FF980015;border:1px solid #FF980030">
+          <div class="earn-icon">📺</div>
+          <div class="earn-pts" style="color:#FF9800">+50</div>
+          <div class="earn-label">تسجيل قناة</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:rgba(255,255,255,0.04);border-radius:20px;padding:24px">
+      <h3 style="margin-bottom:16px;font-weight:800">📋 سجل نشاطاتي</h3>
+      <div id="activityLog"><p style="color:#888;text-align:center;padding:20px 0">لا توجد نشاطات بعد. ابدأ بالاشتراك والإعجاب!</p></div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD TAB -->
+  <div id="tab-leaderboard" style="display:none">
+    <h2 style="font-weight:800;font-size:22px;margin-bottom:24px">👑 المتصدرون</h2>
+    <div class="lb-list" id="lbList"></div>
+  </div>
+</main>
+
+<!-- Register Modal -->
+<div id="modal-overlay" onclick="closeModalIfOutside(event)">
+  <div id="modal-box">
+    <h2>📺 تسجيل قناتك</h2>
+    <div class="form-group">
+      <label>اسم القناة</label>
+      <input type="text" id="fName" placeholder="مثال: قناة عالم التقنية" />
+    </div>
+    <div class="form-group">
+      <label>اسم المستخدم</label>
+      <input type="text" id="fHandle" placeholder="مثال: @TechWorld" />
+    </div>
+    <div class="form-group">
+      <label>رابط القناة</label>
+      <input type="text" id="fUrl" placeholder="https://youtube.com/channel/..." />
+    </div>
+    <div class="form-group">
+      <label>الفئة</label>
+      <select id="fCategory">
+        <option>تقنية</option><option>طبخ</option><option>رياضة</option>
+        <option>ألعاب</option><option>سفر</option><option>تعليم</option>
+        <option>ترفيه</option><option>أخرى</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>وصف القناة</label>
+      <textarea id="fDesc" rows="3" placeholder="اكتب وصفاً موجزاً لقناتك..."></textarea>
+    </div>
+    <button class="btn-submit" onclick="handleRegister()">🚀 تسجيل القناة (+50 نقطة)</button>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const LEVELS = [
+  { level:1, name:"مبتدئ",  min:0,   color:"#9E9E9E" },
+  { level:2, name:"ناشئ",   min:100, color:"#4CAF50" },
+  { level:3, name:"نشيط",   min:200, color:"#2196F3" },
+  { level:4, name:"متميز",  min:300, color:"#9C27B0" },
+  { level:5, name:"متقدم",  min:450, color:"#FF9800" },
+  { level:6, name:"خبير",   min:600, color:"#F44336" },
+  { level:7, name:"نجم",    min:750, color:"#E91E8C" },
+  { level:8, name:"أسطورة", min:900, color:"#FFD700" },
+];
+
+const catColors = {
+  تقنية:"#FF6B35", طبخ:"#E91E8C", رياضة:"#00BCD4",
+  ألعاب:"#9C27B0", سفر:"#4CAF50", تعليم:"#FF9800",
+};
+
+let channels = [
+  { id:1, name:"تقني بلس", handle:"@TechniPlus", avatar:"ت", cover:"#FF6B35", category:"تقنية", subscribers:12400, videos:87, description:"كل ما يخص التقنية والبرمجة وأحدث الأخبار التقنية", joined:"2024-01-15", points:340, liked:false, subscribed:false, likes:128, url:"https://youtube.com" },
+  { id:2, name:"عالم الطبخ", handle:"@CookWorld", avatar:"ع", cover:"#E91E8C", category:"طبخ", subscribers:8700, videos:145, description:"وصفات يومية شهية وسهلة التحضير لجميع أفراد الأسرة", joined:"2023-11-20", points:210, liked:false, subscribed:false, likes:94, url:"https://youtube.com" },
+  { id:3, name:"رياضة وصحة", handle:"@SportHealth", avatar:"ر", cover:"#00BCD4", category:"رياضة", subscribers:21000, videos:203, description:"تمارين يومية ونصائح صحية للحياة الأفضل", joined:"2023-06-10", points:580, liked:false, subscribed:false, likes:245, url:"https://youtube.com" },
+  { id:4, name:"ألعاب العرب", handle:"@ArabGames", avatar:"ا", cover:"#9C27B0", category:"ألعاب", subscribers:45000, videos:412, description:"مراجعات وعروض أحدث الألعاب العربية والعالمية", joined:"2022-08-05", points:920, liked:false, subscribed:false, likes:387, url:"https://youtube.com" },
+  { id:5, name:"السفر والمغامرة", handle:"@TravelAdventure", avatar:"س", cover:"#4CAF50", category:"سفر", subscribers:6500, videos:62, description:"رحلات شيقة وتجارب سفر حول العالم", joined:"2024-03-01", points:145, liked:false, subscribed:false, likes:71, url:"https://youtube.com" },
+  { id:6, name:"تعلم وتطور", handle:"@LearnGrow", avatar:"ت", cover:"#FF9800", category:"تعليم", subscribers:33000, videos:280, description:"محتوى تعليمي متنوع لتطوير المهارات والمعرفة", joined:"2023-02-14", points:760, liked:false, subscribed:false, likes:312, url:"https://youtube.com" },
+];
+
+let myPoints = 0;
+let myActions = [];
+let activeTab = "explore";
+let activeFilter = "الكل";
+let activeSort = "جديد";
+let registeredChannel = null;
+let toastTimer = null;
+
+// ===== HELPERS =====
+function getLevelInfo(pts) {
+  let info = LEVELS[0];
+  for (const l of LEVELS) { if (pts >= l.min) info = l; }
+  return info;
+}
+function getNextLevel(pts) {
+  return LEVELS.find(l => l.min > pts) || null;
+}
+function formatNum(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1) + "م";
+  if (n >= 1000) return (n/1000).toFixed(1) + "ك";
+  return n.toString();
+}
+
+// ===== TOAST =====
+function showToast(msg, type="success") {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.style.background = type==="error"?"#c62828":type==="warn"?"#e65100":"#1B5E20";
+  el.style.display = "block";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ el.style.display="none"; }, 3000);
+}
+
+// ===== HEADER POINTS =====
+function updateHeader() {
+  const lvl = getLevelInfo(myPoints);
+  const badge = document.getElementById("pointsBadge");
+  badge.style.borderColor = lvl.color + "40";
+  document.getElementById("headerPts").textContent = myPoints;
+  document.getElementById("headerPts").style.color = lvl.color;
+  const lb = document.getElementById("headerLevel");
+  lb.textContent = lvl.name;
+  lb.style.background = lvl.color;
+}
+
+// ===== PROGRESS BANNER =====
+function updateBanner() {
+  const lvl = getLevelInfo(myPoints);
+  const next = getNextLevel(myPoints);
+  document.getElementById("bannerLevelName").textContent = lvl.name;
+  document.getElementById("bannerLevelName").style.color = lvl.color;
+  const pct = next ? Math.round(((myPoints - lvl.min) / (next.min - lvl.min)) * 100) : 100;
+  const fill = document.getElementById("progressFill");
+  fill.style.width = pct + "%";
+  fill.style.background = `linear-gradient(90deg, ${lvl.color}, #FF6B35)`;
+  document.getElementById("progressLabel").textContent = `${myPoints} / ${next ? next.min : "MAX"} نقطة`;
+}
+
+// ===== POINTS TAB =====
+function updatePointsTab() {
+  const lvl = getLevelInfo(myPoints);
+  const next = getNextLevel(myPoints);
+  const card = document.getElementById("pointsTotalCard");
+  card.style.background = lvl.color + "20";
+  card.style.border = `1px solid ${lvl.color}40`;
+  const big = document.getElementById("pointsBig");
+  big.textContent = myPoints;
+  big.style.color = lvl.color;
+  const nameEl = document.getElementById("pointsLevelName");
+  nameEl.textContent = lvl.name;
+  nameEl.style.color = lvl.color;
+  document.getElementById("pointsNextInfo").textContent =
+    next ? `${next.min - myPoints} نقطة للمستوى التالي` : "وصلت للمستوى الأقصى 🎉";
+
+  const log = document.getElementById("activityLog");
+  if (myActions.length === 0) {
+    log.innerHTML = '<p style="color:#888;text-align:center;padding:20px 0">لا توجد نشاطات بعد. ابدأ بالاشتراك والإعجاب!</p>';
+  } else {
+    log.innerHTML = '<div class="activity-log">' + myActions.map(a => `
+      <div class="activity-item">
+        <span class="ai-icon">${a.type==="sub"?"🔔":a.type==="like"?"❤️":"📺"}</span>
+        <span class="ai-text">${a.type==="sub"?"اشتركت في":a.type==="like"?"أعجبت بـ":"سجّلت قناة"} <strong>${a.channel}</strong></span>
+        <span class="ai-pts">+${a.pts}</span>
+        <span class="ai-time">${a.time}</span>
+      </div>`).join("") + "</div>";
+  }
+}
+
+// ===== LEADERBOARD =====
+function renderLeaderboard() {
+  const sorted = [...channels].sort((a,b) => b.subscribers - a.subscribers);
+  const colors = ["#FFD700","#C0C0C0","#CD7F32"];
+  const bgColors = ["#FFD70020","#C0C0C020","#CD7F3220"];
+  const borderColors = ["#FFD70040","#C0C0C040","#CD7F3240"];
+  const medals = ["🥇","🥈","🥉"];
+  document.getElementById("lbList").innerHTML = sorted.map((ch, i) => {
+    const lvl = getLevelInfo(ch.points);
+    const isTop = i < 3;
+    return `
+    <div class="lb-item" style="background:${isTop?`linear-gradient(135deg,${bgColors[i]},rgba(255,255,255,0.03))`:"rgba(255,255,255,0.03)"};border:1px solid ${isTop?borderColors[i]:"rgba(255,255,255,0.07)"}">
+      <div class="lb-rank" style="background:${isTop?colors[i]:"rgba(255,255,255,0.1)"};color:${isTop?"#000":"#fff"}">${isTop?medals[i]:i+1}</div>
+      <div class="lb-avatar" style="background:${ch.cover}">${ch.avatar}</div>
+      <div class="lb-info">
+        <div class="lb-name">${ch.name}</div>
+        <div class="lb-handle">${ch.handle}</div>
+      </div>
+      <div class="lb-subs">
+        <div class="lb-subs-val">${formatNum(ch.subscribers)}</div>
+        <div class="lb-subs-label">مشترك</div>
+      </div>
+      <div class="lb-level-badge" style="background:${lvl.color}">${lvl.name}</div>
+    </div>`;
+  }).join("");
+}
+
+// ===== CATEGORY FILTERS =====
+function renderFilters() {
+  const cats = ["الكل", ...Array.from(new Set(channels.map(c=>c.category)))];
+  document.getElementById("catFilters").innerHTML = cats.map(cat => {
+    const color = catColors[cat] || "#FF6B35";
+    const isActive = cat === activeFilter;
+    return `<button class="cat-btn${isActive?" active":""}"
+      style="${isActive?`background:${color}`:""}"
+      onclick="setFilter('${cat}')">${cat}</button>`;
+  }).join("");
+}
+
+function setFilter(cat) {
+  activeFilter = cat;
+  renderFilters();
+  renderGrid();
+}
+
+function applySort() {
+  activeSort = document.getElementById("sortSelect").value;
+  renderGrid();
+}
+
+// ===== CHANNEL CARD HTML =====
+function cardHTML(ch, featured=false) {
+  const lvl = getLevelInfo(ch.points);
+  return `
+  <div class="channel-card" style="border-color:${featured?"#FF6B3550":"rgba(255,255,255,0.07)"}">
+    <div class="card-cover" style="background:linear-gradient(135deg,${ch.cover},${ch.cover}88)">
+      <div class="card-cat-badge">${ch.category}</div>
+      ${ch.isOwn ? '<div class="card-own-badge">⭐ قناتي</div>' : ""}
+    </div>
+    <div class="card-avatar-wrap">
+      <div class="card-avatar" style="background:linear-gradient(135deg,${ch.cover},${ch.cover}88);box-shadow:0 0 20px ${ch.cover}60">${ch.avatar}</div>
+    </div>
+    <div class="card-body">
+      <div class="card-name-row">
+        <span class="card-name">${ch.name}</span>
+        <span class="card-level-badge" style="background:${lvl.color}">${lvl.name}</span>
+      </div>
+      <div class="card-handle">${ch.handle}</div>
+      <p class="card-desc">${ch.description}</p>
+      <div class="card-stats">
+        <div class="card-stat"><div class="stat-icon">👥</div><div class="stat-val">${formatNum(ch.subscribers)}</div><div class="stat-label">مشترك</div></div>
+        <div class="card-stat"><div class="stat-icon">🎬</div><div class="stat-val">${ch.videos}</div><div class="stat-label">فيديو</div></div>
+        <div class="card-stat"><div class="stat-icon">⭐</div><div class="stat-val">${ch.points}</div><div class="stat-label">نقطة</div></div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-sub ${ch.subscribed?"active":"inactive"}" onclick="handleSubscribe(${ch.id})">
+          ${ch.subscribed?"✅ مشترك":"🔔 اشترك"}
+        </button>
+        <button class="btn-like${ch.liked?" liked":""}" onclick="handleLike(${ch.id})">
+          ${ch.liked?"❤️":"🤍"} ${ch.likes}
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ===== RENDER GRID =====
+function renderGrid() {
+  let filtered = channels.filter(ch => activeFilter === "الكل" || ch.category === activeFilter);
+  if (activeSort === "الأكثر اشتراكاً") filtered.sort((a,b) => b.subscribers - a.subscribers);
+  else if (activeSort === "الأكثر إعجاباً") filtered.sort((a,b) => b.likes - a.likes);
+  else filtered.sort((a,b) => b.id - a.id);
+  document.getElementById("channelsGrid").innerHTML = filtered.map(ch => cardHTML(ch)).join("");
+}
+
+// ===== MY CHANNEL =====
+function renderMyChannel() {
+  const el = document.getElementById("myChannelContent");
+  if (!registeredChannel) {
+    el.innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon">📺</div>
+      <h2>لا توجد قناة مسجلة بعد</h2>
+      <p>سجّل قناتك واحصل على +50 نقطة فوراً!</p>
+      <button class="btn-register-now" onclick="openModal()">🚀 سجّل قناتك الآن</button>
+    </div>`;
+    return;
+  }
+  const live = channels.find(c => c.id === registeredChannel.id) || registeredChannel;
+  el.innerHTML = `
+  <h2 style="font-weight:800;font-size:22px;margin-bottom:24px">📺 قناتي</h2>
+  <div style="max-width:400px">${cardHTML({...live, isOwn:true}, true)}</div>
+  <div style="margin-top:28px;background:rgba(255,255,255,0.04);border-radius:16px;padding:24px;border:1px solid rgba(255,255,255,0.07)">
+    <h3 style="margin-bottom:16px;color:#FF6B35">📊 إحصائيات قناتك</h3>
+    <div class="stats-grid-3">
+      <div class="stat-card"><div class="sc-icon">👥</div><div class="sc-val">${formatNum(live.subscribers)}</div><div class="sc-label">المشتركون</div></div>
+      <div class="stat-card"><div class="sc-icon">❤️</div><div class="sc-val">${live.likes}</div><div class="sc-label">الإعجابات</div></div>
+      <div class="stat-card"><div class="sc-icon">⭐</div><div class="sc-val">${myPoints}</div><div class="sc-label">نقاطي</div></div>
+    </div>
+  </div>`;
+}
+
+// ===== SUBSCRIBE =====
+function handleSubscribe(id) {
+  channels = channels.map(ch => {
+    if (ch.id !== id) return ch;
+    const was = ch.subscribed;
+    if (!was) {
+      myPoints += 15;
+      myActions = [{ type:"sub", channel:ch.name, pts:15, time:new Date().toLocaleTimeString("ar") }, ...myActions.slice(0,19)];
+      showToast(`✅ اشتركت في ${ch.name} | +15 نقطة`);
+    } else {
+      myPoints = Math.max(0, myPoints - 15);
+      showToast(`❌ ألغيت الاشتراك في ${ch.name} | -15 نقطة`, "warn");
+    }
+    return { ...ch, subscribed: !was, subscribers: was ? ch.subscribers-1 : ch.subscribers+1 };
+  });
+  refresh();
+}
+
+// ===== LIKE =====
+function handleLike(id) {
+  channels = channels.map(ch => {
+    if (ch.id !== id) return ch;
+    const was = ch.liked;
+    if (!was) {
+      myPoints += 5;
+      myActions = [{ type:"like", channel:ch.name, pts:5, time:new Date().toLocaleTimeString("ar") }, ...myActions.slice(0,19)];
+      showToast(`❤️ أعجبت بـ ${ch.name} | +5 نقاط`);
+    } else {
+      myPoints = Math.max(0, myPoints - 5);
+      showToast(`💔 أزلت الإعجاب عن ${ch.name} | -5 نقاط`, "warn");
+    }
+    return { ...ch, liked: !was, likes: was ? ch.likes-1 : ch.likes+1 };
+  });
+  refresh();
+}
+
+// ===== REGISTER =====
+function handleRegister() {
+  const name = document.getElementById("fName").value.trim();
+  const handle = document.getElementById("fHandle").value.trim();
+  const url = document.getElementById("fUrl").value.trim();
+  const category = document.getElementById("fCategory").value;
+  const desc = document.getElementById("fDesc").value.trim();
+  if (!name || !handle || !desc) { showToast("يرجى ملء جميع الحقول", "error"); return; }
+  const colors = ["#FF6B35","#E91E8C","#00BCD4","#9C27B0","#4CAF50","#FF9800","#F44336","#2196F3"];
+  const newCh = {
+    id: Date.now(), name,
+    handle: handle.startsWith("@") ? handle : "@" + handle,
+    avatar: name[0], cover: colors[Math.floor(Math.random()*colors.length)],
+    category, subscribers: 0, videos: 0, description: desc,
+    joined: new Date().toISOString().slice(0,10),
+    points: 50, liked: false, subscribed: false, likes: 0,
+    url: url || "https://youtube.com", isOwn: true,
+  };
+  channels = [newCh, ...channels];
+  registeredChannel = newCh;
+  myPoints += 50;
+  myActions = [{ type:"register", channel:name, pts:50, time:new Date().toLocaleTimeString("ar") }, ...myActions.slice(0,19)];
+  document.getElementById("fName").value="";
+  document.getElementById("fHandle").value="";
+  document.getElementById("fUrl").value="";
+  document.getElementById("fDesc").value="";
+  closeModal();
+  showToast("🎉 تم تسجيل قناتك بنجاح! +50 نقطة");
+  switchTab("my");
+  refresh();
+}
+
+// ===== MODAL =====
+function openModal() { document.getElementById("modal-overlay").classList.add("open"); }
+function closeModal() { document.getElementById("modal-overlay").classList.remove("open"); }
+function closeModalIfOutside(e) { if (e.target === document.getElementById("modal-overlay")) closeModal(); }
+
+// ===== TABS =====
+function switchTab(tab) {
+  activeTab = tab;
+  ["explore","my","points","leaderboard"].forEach(t => {
+    document.getElementById("tab-"+t).style.display = t===tab?"block":"none";
+    document.querySelector(`[data-tab="${t}"]`).classList.toggle("active", t===tab);
+  });
+  if (tab === "leaderboard") renderLeaderboard();
+  if (tab === "my") renderMyChannel();
+  if (tab === "points") updatePointsTab();
+}
+
+// ===== FULL REFRESH =====
+function refresh() {
+  updateHeader();
+  updateBanner();
+  renderFilters();
+  renderGrid();
+  if (activeTab === "my") renderMyChannel();
+  if (activeTab === "points") updatePointsTab();
+  if (activeTab === "leaderboard") renderLeaderboard();
+}
+
+// ===== INIT =====
+refresh();
+</script>
+</body>
+</html>
