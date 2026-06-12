@@ -5,6 +5,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>يوتيوب كنكت</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider,
+             createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile
+           } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCEF7LpEgPw0TGbPUjOEbKm7n8wZCLOGpQ",
+      authDomain: "connect-265e0.firebaseapp.com",
+      projectId: "connect-265e0",
+      storageBucket: "connect-265e0.firebasestorage.app",
+      messagingSenderId: "679004259839",
+      appId: "1:679004259839:web:ba8f403aeccbfbe2bf93ca",
+      measurementId: "G-L75BCZQSLW"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const googleProvider = new GoogleAuthProvider();
+
+    // Expose to window for use in main script
+    window._auth = auth;
+    window._signInWithPopup = signInWithPopup;
+    window._googleProvider = googleProvider;
+    window._createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+    window._signInWithEmailAndPassword = signInWithEmailAndPassword;
+    window._signOut = signOut;
+    window._updateProfile = updateProfile;
+
+    onAuthStateChanged(auth, (user) => {
+      window._currentUser = user;
+      if (window._onAuthReady) window._onAuthReady(user);
+    });
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -372,9 +407,170 @@
     body.light .badge-chip { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.08); color: #444; }
     body.light .empty-state p { color: #777; }
     body.light .lb-handle, body.light .sc-label, body.light .stat-label, body.light .ai-time { color: #888; }
+
+    /* ===== AUTH SCREEN ===== */
+    #auth-screen {
+      position: fixed; inset: 0; z-index: 9000;
+      background: #0A0A0F;
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    #auth-screen.hidden { display: none; }
+    .auth-box {
+      background: #12121E;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 28px; padding: 40px 36px;
+      width: 100%; max-width: 420px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    }
+    .auth-logo { text-align: center; margin-bottom: 28px; }
+    .auth-logo .logo-icon-big {
+      width: 60px; height: 60px; border-radius: 18px;
+      background: linear-gradient(135deg, #FF0000, #FF6B35);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 32px; margin-bottom: 14px;
+    }
+    .auth-logo h1 { font-weight: 900; font-size: 24px; }
+    .auth-logo h1 span { color: #FF6B35; }
+    .auth-logo p { color: #888; font-size: 14px; margin-top: 6px; }
+    .auth-tabs { display: flex; background: rgba(255,255,255,0.05); border-radius: 14px; padding: 4px; margin-bottom: 28px; }
+    .auth-tab {
+      flex: 1; padding: 10px; border: none; border-radius: 10px;
+      font-weight: 700; font-size: 14px; color: #888;
+      background: none; transition: all 0.2s; font-family: 'Cairo', sans-serif;
+    }
+    .auth-tab.active { background: #FF6B35; color: #fff; }
+    .auth-form-group { margin-bottom: 14px; }
+    .auth-form-group label { display: block; font-size: 13px; color: #aaa; margin-bottom: 6px; }
+    .auth-form-group input {
+      width: 100%; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+      padding: 12px 16px; color: #fff; font-size: 14px;
+      font-family: 'Cairo', sans-serif; outline: none; transition: border 0.2s;
+    }
+    .auth-form-group input:focus { border-color: #FF6B3580; }
+    .btn-auth-submit {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, #FF0000, #FF6B35);
+      color: #fff; border: none; border-radius: 14px;
+      font-weight: 800; font-size: 16px; font-family: 'Cairo', sans-serif;
+      margin-top: 4px; transition: opacity 0.2s; cursor: pointer;
+    }
+    .btn-auth-submit:hover { opacity: 0.9; }
+    .auth-divider {
+      display: flex; align-items: center; gap: 12px;
+      color: #555; font-size: 13px; margin: 20px 0;
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.08);
+    }
+    .btn-google {
+      width: 100%; padding: 13px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px; color: #fff;
+      font-weight: 700; font-size: 15px; font-family: 'Cairo', sans-serif;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.2s; cursor: pointer;
+    }
+    .btn-google:hover { background: rgba(255,255,255,0.1); }
+    .btn-google img { width: 20px; height: 20px; }
+    .auth-error {
+      background: rgba(198,40,40,0.15); border: 1px solid #c6282860;
+      border-radius: 10px; padding: 10px 14px; font-size: 13px;
+      color: #ef9a9a; margin-bottom: 14px; display: none;
+    }
+    /* User avatar in header */
+    .user-avatar-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, #FF0000, #FF6B35);
+      border: none; color: #fff; font-weight: 800; font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; overflow: hidden; position: relative;
+    }
+    .user-avatar-btn img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .user-menu {
+      position: absolute; top: 52px; left: 0;
+      background: #1A1A2E; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px; padding: 8px; min-width: 200px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5); z-index: 200;
+      display: none;
+    }
+    .user-menu.open { display: block; }
+    .user-menu-header { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.07); margin-bottom: 8px; }
+    .user-menu-name { font-weight: 800; font-size: 15px; }
+    .user-menu-email { font-size: 12px; color: #888; margin-top: 2px; }
+    .user-menu-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 10px; border: none;
+      background: none; color: #ccc; font-size: 14px; font-weight: 600;
+      width: 100%; font-family: 'Cairo', sans-serif; cursor: pointer; transition: background 0.2s;
+    }
+    .user-menu-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .user-menu-item.danger { color: #ef5350; }
+    .header-user-wrap { position: relative; }
   </style>
 </head>
 <body>
+
+<!-- ===== AUTH SCREEN ===== -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="logo-icon-big">▶</div>
+      <h1>يوتيوب <span>كنكت</span></h1>
+      <p>منصة يوتيوبرز العرب — سجّل دخولك للمتابعة</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">تسجيل الدخول</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">حساب جديد</button>
+    </div>
+
+    <!-- Error -->
+    <div class="auth-error" id="authError"></div>
+
+    <!-- Login Form -->
+    <div id="auth-login">
+      <div class="auth-form-group">
+        <label>البريد الإلكتروني</label>
+        <input type="email" id="loginEmail" placeholder="example@email.com" />
+      </div>
+      <div class="auth-form-group">
+        <label>كلمة المرور</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" />
+      </div>
+      <button class="btn-auth-submit" onclick="handleEmailLogin()">🔑 تسجيل الدخول</button>
+    </div>
+
+    <!-- Register Form -->
+    <div id="auth-register" style="display:none">
+      <div class="auth-form-group">
+        <label>الاسم</label>
+        <input type="text" id="regName" placeholder="اسمك الكامل" />
+      </div>
+      <div class="auth-form-group">
+        <label>البريد الإلكتروني</label>
+        <input type="email" id="regEmail" placeholder="example@email.com" />
+      </div>
+      <div class="auth-form-group">
+        <label>كلمة المرور</label>
+        <input type="password" id="regPassword" placeholder="6 أحرف على الأقل" />
+      </div>
+      <button class="btn-auth-submit" onclick="handleEmailRegister()">🚀 إنشاء حساب</button>
+    </div>
+
+    <!-- Divider -->
+    <div class="auth-divider">أو</div>
+
+    <!-- Google -->
+    <button class="btn-google" onclick="handleGoogleLogin()">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.8 33.2 29.4 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C33.9 6.7 29.2 4.5 24 4.5 12.7 4.5 3.5 13.7 3.5 25S12.7 45.5 24 45.5c10.8 0 20.1-7.8 20.1-20.5 0-1.4-.1-2.7-.5-5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C33.9 6.7 29.2 4.5 24 4.5c-7.7 0-14.3 4.4-17.7 10.2z"/><path fill="#4CAF50" d="M24 45.5c5.1 0 9.8-1.9 13.3-5.1l-6.2-5.2C29.2 36.9 26.7 38 24 38c-5.4 0-9.9-3.7-11.5-8.7l-6.6 5.1C9.6 41 16.3 45.5 24 45.5z"/><path fill="#1565C0" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.7l6.2 5.2c3.7-3.4 6-8.4 6-14.4 0-1.4-.1-2.7-.6-4.5z"/></svg>
+      المتابعة عبر Google
+    </button>
+  </div>
+</div>
 
 <!-- Toast -->
 <div id="toast"></div>
@@ -394,6 +590,20 @@
         <span class="level-badge" id="headerLevel" style="background:#9E9E9E">مبتدئ</span>
       </div>
       <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="تبديل الوضع الليلي/النهاري">🌙</button>
+      <div class="header-user-wrap" id="headerUserWrap">
+        <button class="user-avatar-btn" id="userAvatarBtn" onclick="toggleUserMenu()">
+          <span id="userAvatarText">؟</span>
+        </button>
+        <div class="user-menu" id="userMenu">
+          <div class="user-menu-header">
+            <div class="user-menu-name" id="menuUserName">—</div>
+            <div class="user-menu-email" id="menuUserEmail">—</div>
+          </div>
+          <button class="user-menu-item" onclick="switchTab('my');closeUserMenu()">📺 قناتي</button>
+          <button class="user-menu-item" onclick="switchTab('points');closeUserMenu()">⭐ نقاطي</button>
+          <button class="user-menu-item danger" onclick="handleSignOut()">🚪 تسجيل الخروج</button>
+        </div>
+      </div>
       <button class="btn-register-header" onclick="openModal()">+ سجّل قناتك</button>
     </div>
   </div>
@@ -1087,10 +1297,127 @@ function refresh() {
   if (activeTab === "leaderboard") renderLeaderboard();
 }
 
+// ===== FIREBASE AUTH =====
+function showAuthScreen() { document.getElementById("auth-screen").classList.remove("hidden"); }
+function hideAuthScreen() { document.getElementById("auth-screen").classList.add("hidden"); }
+
+function switchAuthTab(tab) {
+  document.getElementById("auth-login").style.display = tab === "login" ? "block" : "none";
+  document.getElementById("auth-register").style.display = tab === "register" ? "block" : "none";
+  document.querySelectorAll(".auth-tab").forEach((b,i) => b.classList.toggle("active", (tab==="login"&&i===0)||(tab==="register"&&i===1)));
+  clearAuthError();
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById("authError");
+  el.textContent = msg; el.style.display = "block";
+}
+function clearAuthError() {
+  document.getElementById("authError").style.display = "none";
+}
+
+function updateHeaderUser(user) {
+  const btn = document.getElementById("userAvatarBtn");
+  const txt = document.getElementById("userAvatarText");
+  document.getElementById("menuUserName").textContent = user.displayName || "مستخدم";
+  document.getElementById("menuUserEmail").textContent = user.email || "";
+  if (user.photoURL) {
+    txt.innerHTML = `<img src="${user.photoURL}" alt="avatar" />`;
+  } else {
+    txt.innerHTML = (user.displayName || user.email || "م")[0].toUpperCase();
+  }
+}
+
+function toggleUserMenu() {
+  document.getElementById("userMenu").classList.toggle("open");
+}
+function closeUserMenu() {
+  document.getElementById("userMenu").classList.remove("open");
+}
+document.addEventListener("click", (e) => {
+  const wrap = document.getElementById("headerUserWrap");
+  if (wrap && !wrap.contains(e.target)) closeUserMenu();
+});
+
+async function handleGoogleLogin() {
+  clearAuthError();
+  try {
+    await window._signInWithPopup(window._auth, window._googleProvider);
+  } catch(e) {
+    showAuthError(friendlyError(e.code));
+  }
+}
+
+async function handleEmailLogin() {
+  clearAuthError();
+  const email = document.getElementById("loginEmail").value.trim();
+  const pass = document.getElementById("loginPassword").value;
+  if (!email || !pass) { showAuthError("يرجى تعبئة البريد وكلمة المرور"); return; }
+  try {
+    await window._signInWithEmailAndPassword(window._auth, email, pass);
+  } catch(e) {
+    showAuthError(friendlyError(e.code));
+  }
+}
+
+async function handleEmailRegister() {
+  clearAuthError();
+  const name = document.getElementById("regName").value.trim();
+  const email = document.getElementById("regEmail").value.trim();
+  const pass = document.getElementById("regPassword").value;
+  if (!name || !email || !pass) { showAuthError("يرجى تعبئة جميع الحقول"); return; }
+  if (pass.length < 6) { showAuthError("كلمة المرور يجب أن تكون 6 أحرف على الأقل"); return; }
+  try {
+    const cred = await window._createUserWithEmailAndPassword(window._auth, email, pass);
+    await window._updateProfile(cred.user, { displayName: name });
+    window._currentUser = { ...cred.user, displayName: name };
+    updateHeaderUser(window._currentUser);
+  } catch(e) {
+    showAuthError(friendlyError(e.code));
+  }
+}
+
+async function handleSignOut() {
+  closeUserMenu();
+  await window._signOut(window._auth);
+  window._currentUser = null;
+  showAuthScreen();
+  showToast("👋 تم تسجيل الخروج بنجاح", "warn");
+}
+
+function friendlyError(code) {
+  const map = {
+    "auth/user-not-found": "البريد الإلكتروني غير مسجّل",
+    "auth/wrong-password": "كلمة المرور غير صحيحة",
+    "auth/email-already-in-use": "البريد مستخدم مسبقاً، حاول تسجيل الدخول",
+    "auth/invalid-email": "صيغة البريد الإلكتروني غير صحيحة",
+    "auth/weak-password": "كلمة المرور ضعيفة جداً",
+    "auth/popup-closed-by-user": "تم إغلاق نافذة Google",
+    "auth/network-request-failed": "خطأ في الاتصال بالإنترنت",
+    "auth/invalid-credential": "بيانات الدخول غير صحيحة",
+  };
+  return map[code] || "حدث خطأ، يرجى المحاولة مرة أخرى";
+}
+
 // ===== INIT =====
 loadTheme();
-loadState();
-refresh();
+
+// Wait for Firebase auth to be ready
+window._onAuthReady = function(user) {
+  if (user) {
+    hideAuthScreen();
+    updateHeaderUser(user);
+    loadState();
+    refresh();
+  } else {
+    showAuthScreen();
+  }
+};
+
+// Fallback if Firebase module loads before onAuthReady is set
+if (window._currentUser !== undefined) {
+  window._onAuthReady(window._currentUser);
+}
 </script>
 </body>
 </html>
