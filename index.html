@@ -289,6 +289,89 @@
       .header-right .points-badge { display: none; }
       .tab-btn { padding: 12px 10px; font-size: 12px; }
     }
+    /* ===== New additions ===== */
+    .theme-toggle {
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 50%; width: 36px; height: 36px; font-size: 16px;
+      display: flex; align-items: center; justify-content: center; color: #fff;
+    }
+    .search-input {
+      background: rgba(255,255,255,0.06); color: #fff;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px; padding: 7px 16px; font-size: 13px;
+      min-width: 180px; flex: 1;
+    }
+    .search-input::placeholder { color: #888; }
+    .btn-share {
+      padding: 10px 14px; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; font-size: 14px; font-weight: 700;
+      background: rgba(255,255,255,0.06); color: #aaa; transition: all 0.2s;
+    }
+    .btn-share:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    .badge-chip {
+      background: rgba(255,255,255,0.07); border-radius: 12px;
+      padding: 4px 10px; font-size: 12px; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .card-actions { flex-wrap: wrap; }
+    .channel-card { cursor: pointer; }
+    /* Detail modal */
+    #detail-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+      display: none; align-items: center; justify-content: center;
+      z-index: 1000; padding: 16px;
+    }
+    #detail-overlay.open { display: flex; }
+    #detail-box {
+      background: #12121E; border-radius: 24px; padding: 32px;
+      width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    /* Level up modal */
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.7); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    #levelup-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+      display: none; align-items: center; justify-content: center;
+      z-index: 1100; padding: 16px;
+    }
+    #levelup-overlay.open { display: flex; }
+    #levelup-box {
+      background: #12121E; border-radius: 24px; padding: 36px;
+      width: 100%; max-width: 360px; text-align: center;
+      border: 1px solid rgba(255,107,53,0.4);
+      box-shadow: 0 0 60px rgba(255,107,53,0.35);
+      animation: popIn 0.4s ease;
+    }
+    /* Light theme */
+    body.light { background: #F2F2F7; color: #1a1a1a; }
+    body.light #header { background: linear-gradient(135deg, #ffffff 0%, #f3e9ff 50%, #e9f1ff 100%); border-bottom-color: rgba(0,0,0,0.08); }
+    body.light .logo-text { color: #1a1a1a; }
+    body.light #tabs { background: #fff; border-bottom-color: rgba(0,0,0,0.08); }
+    body.light .tab-btn { color: #777; }
+    body.light .channel-card { background: #fff; border-color: rgba(0,0,0,0.08); }
+    body.light .channel-card:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.12); }
+    body.light .card-desc { color: #555; }
+    body.light .card-handle { color: #888; }
+    body.light .points-badge { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+    body.light .theme-toggle { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: #1a1a1a; }
+    body.light .cat-btn { background: rgba(0,0,0,0.06); color: #666; }
+    body.light .sort-select, body.light .search-input { background: rgba(0,0,0,0.05); color: #1a1a1a; border-color: rgba(0,0,0,0.1); }
+    body.light .search-input::placeholder { color: #999; }
+    body.light select option { background: #fff; color: #1a1a1a; }
+    body.light #modal-box, body.light #detail-box, body.light #levelup-box { background: #fff; border-color: rgba(0,0,0,0.1); color: #1a1a1a; }
+    body.light .form-group label { color: #666; }
+    body.light .form-group input, body.light .form-group select, body.light .form-group textarea { background: rgba(0,0,0,0.05); color: #1a1a1a; border-color: rgba(0,0,0,0.1); }
+    body.light .activity-item, body.light .stat-card, body.light .lb-item { background: rgba(0,0,0,0.04); }
+    body.light .activity-item, body.light .lb-item { border-color: rgba(0,0,0,0.06); }
+    body.light .btn-like, body.light .btn-share { background: rgba(0,0,0,0.06); color: #666; border-color: rgba(0,0,0,0.1); }
+    body.light .btn-sub.active { background: rgba(0,0,0,0.08); color: #1a1a1a; }
+    body.light .progress-banner { background: linear-gradient(135deg, rgba(255,107,53,0.08), rgba(156,39,176,0.08)); }
+    body.light .badge-chip { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.08); color: #444; }
+    body.light .empty-state p { color: #777; }
+    body.light .lb-handle, body.light .sc-label, body.light .stat-label, body.light .ai-time { color: #888; }
   </style>
 </head>
 <body>
@@ -310,6 +393,7 @@
         <span class="pts-label">نقطة</span>
         <span class="level-badge" id="headerLevel" style="background:#9E9E9E">مبتدئ</span>
       </div>
+      <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="تبديل الوضع الليلي/النهاري">🌙</button>
       <button class="btn-register-header" onclick="openModal()">+ سجّل قناتك</button>
     </div>
   </div>
@@ -351,6 +435,7 @@
 
     <!-- Filters -->
     <div class="filters-row">
+      <input class="search-input" id="searchInput" placeholder="🔍 ابحث عن قناة بالاسم أو @..." oninput="applySearch()" />
       <div class="cat-filters" id="catFilters"></div>
       <select class="sort-select" id="sortSelect" onchange="applySort()">
         <option>جديد</option>
@@ -450,6 +535,20 @@
   </div>
 </div>
 
+<!-- Channel Detail Modal -->
+<div id="detail-overlay" onclick="closeDetailIfOutside(event)">
+  <div id="detail-box">
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<!-- Level Up Celebration Modal -->
+<div id="levelup-overlay">
+  <div id="levelup-box">
+    <div id="levelupContent"></div>
+  </div>
+</div>
+
 <script>
 // ===== DATA =====
 const LEVELS = [
@@ -482,8 +581,21 @@ let myActions = [];
 let activeTab = "explore";
 let activeFilter = "الكل";
 let activeSort = "جديد";
+let searchQuery = "";
 let registeredChannel = null;
+let editingChannelId = null;
 let toastTimer = null;
+
+const BADGES_DEF = [
+  { id:"pioneer", name:"الرواد", icon:"🌟", desc:"من أوائل 10 قنوات في المنصة", check: ch => ch.id <= 6 },
+  { id:"popular", name:"شائعة", icon:"🔥", desc:"أكثر من 10,000 مشترك", check: ch => ch.subscribers >= 10000 },
+  { id:"prolific", name:"غزيرة الإنتاج", icon:"🎬", desc:"أكثر من 100 فيديو", check: ch => ch.videos >= 100 },
+  { id:"loved", name:"محبوبة", icon:"❤️", desc:"أكثر من 100 إعجاب", check: ch => ch.likes >= 100 },
+  { id:"veteran", name:"عريقة", icon:"🏆", desc:"نقاط قناة أعلى من 500", check: ch => ch.points >= 500 },
+];
+function getBadges(ch) {
+  return BADGES_DEF.filter(b => b.check(ch));
+}
 
 // ===== HELPERS =====
 function getLevelInfo(pts) {
@@ -498,6 +610,80 @@ function formatNum(n) {
   if (n >= 1000000) return (n/1000000).toFixed(1) + "م";
   if (n >= 1000) return (n/1000).toFixed(1) + "ك";
   return n.toString();
+}
+
+// ===== PERSISTENCE =====
+function saveState() {
+  try {
+    localStorage.setItem("ytc_state", JSON.stringify({
+      channels, myPoints, myActions, registeredChannel
+    }));
+  } catch(e) {}
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem("ytc_state");
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (Array.isArray(s.channels)) channels = s.channels;
+    if (typeof s.myPoints === "number") myPoints = s.myPoints;
+    if (Array.isArray(s.myActions)) myActions = s.myActions;
+    if (s.registeredChannel) registeredChannel = s.registeredChannel;
+  } catch(e) {}
+}
+
+// ===== THEME =====
+function toggleTheme() {
+  document.body.classList.toggle("light");
+  const isLight = document.body.classList.contains("light");
+  document.getElementById("themeToggleBtn").textContent = isLight ? "☀️" : "🌙";
+  localStorage.setItem("ytc_theme", isLight ? "light" : "dark");
+}
+function loadTheme() {
+  if (localStorage.getItem("ytc_theme") === "light") {
+    document.body.classList.add("light");
+    document.getElementById("themeToggleBtn").textContent = "☀️";
+  }
+}
+
+// ===== LEVEL UP CELEBRATION =====
+function checkLevelUp(prevPoints, newPoints) {
+  const prevLvl = getLevelInfo(prevPoints);
+  const newLvl = getLevelInfo(newPoints);
+  if (newLvl.level > prevLvl.level) showLevelUpModal(newLvl);
+}
+function showLevelUpModal(lvl) {
+  document.getElementById("levelupContent").innerHTML = `
+    <div style="font-size:64px;margin-bottom:12px">🎉</div>
+    <h2 style="margin-bottom:10px">تهانينا!</h2>
+    <p style="color:#aaa;margin-bottom:16px">لقد ارتقيت إلى مستوى جديد</p>
+    <div class="level-badge" style="font-size:18px;padding:8px 24px;display:inline-block;background:${lvl.color}">${lvl.name}</div>
+    <button class="btn-submit" style="margin-top:24px" onclick="closeLevelUp()">رائع! 🚀</button>
+  `;
+  document.getElementById("levelup-overlay").classList.add("open");
+}
+function closeLevelUp() {
+  document.getElementById("levelup-overlay").classList.remove("open");
+}
+
+// ===== SEARCH =====
+function applySearch() {
+  searchQuery = document.getElementById("searchInput").value.trim().toLowerCase();
+  renderGrid();
+}
+
+// ===== SHARE =====
+function shareChannel(id) {
+  const ch = channels.find(c => c.id === id);
+  if (!ch) return;
+  const text = `🎬 ${ch.name} (${ch.handle})\n${ch.description}\n${ch.url}`;
+  if (navigator.share) {
+    navigator.share({ title: ch.name, text, url: ch.url }).catch(()=>{});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(()=> showToast("📋 تم نسخ معلومات القناة للمشاركة"));
+  } else {
+    showToast("📋 " + text);
+  }
 }
 
 // ===== TOAST =====
@@ -618,8 +804,9 @@ function applySort() {
 // ===== CHANNEL CARD HTML =====
 function cardHTML(ch, featured=false) {
   const lvl = getLevelInfo(ch.points);
+  const badges = getBadges(ch);
   return `
-  <div class="channel-card" style="border-color:${featured?"#FF6B3550":"rgba(255,255,255,0.07)"}">
+  <div class="channel-card" style="border-color:${featured?"#FF6B3550":"rgba(255,255,255,0.07)"}" onclick="openDetail(${ch.id})">
     <div class="card-cover" style="background:linear-gradient(135deg,${ch.cover},${ch.cover}88)">
       <div class="card-cat-badge">${ch.category}</div>
       ${ch.isOwn ? '<div class="card-own-badge">⭐ قناتي</div>' : ""}
@@ -634,18 +821,20 @@ function cardHTML(ch, featured=false) {
       </div>
       <div class="card-handle">${ch.handle}</div>
       <p class="card-desc">${ch.description}</p>
+      ${badges.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${badges.map(b=>`<span class="badge-chip" title="${b.desc}">${b.icon} ${b.name}</span>`).join("")}</div>` : ""}
       <div class="card-stats">
         <div class="card-stat"><div class="stat-icon">👥</div><div class="stat-val">${formatNum(ch.subscribers)}</div><div class="stat-label">مشترك</div></div>
         <div class="card-stat"><div class="stat-icon">🎬</div><div class="stat-val">${ch.videos}</div><div class="stat-label">فيديو</div></div>
         <div class="card-stat"><div class="stat-icon">⭐</div><div class="stat-val">${ch.points}</div><div class="stat-label">نقطة</div></div>
       </div>
       <div class="card-actions">
-        <button class="btn-sub ${ch.subscribed?"active":"inactive"}" onclick="handleSubscribe(${ch.id})">
+        <button class="btn-sub ${ch.subscribed?"active":"inactive"}" onclick="event.stopPropagation();handleSubscribe(${ch.id})">
           ${ch.subscribed?"✅ مشترك":"🔔 اشترك"}
         </button>
-        <button class="btn-like${ch.liked?" liked":""}" onclick="handleLike(${ch.id})">
+        <button class="btn-like${ch.liked?" liked":""}" onclick="event.stopPropagation();handleLike(${ch.id})">
           ${ch.liked?"❤️":"🤍"} ${ch.likes}
         </button>
+        <button class="btn-share" onclick="event.stopPropagation();shareChannel(${ch.id})" title="مشاركة">🔗</button>
       </div>
     </div>
   </div>`;
@@ -654,10 +843,59 @@ function cardHTML(ch, featured=false) {
 // ===== RENDER GRID =====
 function renderGrid() {
   let filtered = channels.filter(ch => activeFilter === "الكل" || ch.category === activeFilter);
+  if (searchQuery) {
+    filtered = filtered.filter(ch =>
+      ch.name.toLowerCase().includes(searchQuery) ||
+      ch.handle.toLowerCase().includes(searchQuery)
+    );
+  }
   if (activeSort === "الأكثر اشتراكاً") filtered.sort((a,b) => b.subscribers - a.subscribers);
   else if (activeSort === "الأكثر إعجاباً") filtered.sort((a,b) => b.likes - a.likes);
   else filtered.sort((a,b) => b.id - a.id);
-  document.getElementById("channelsGrid").innerHTML = filtered.map(ch => cardHTML(ch)).join("");
+  document.getElementById("channelsGrid").innerHTML = filtered.length
+    ? filtered.map(ch => cardHTML(ch)).join("")
+    : '<p style="color:#888;text-align:center;padding:40px 0;grid-column:1/-1">لا توجد نتائج مطابقة 🔍</p>';
+}
+
+// ===== CHANNEL DETAIL MODAL =====
+function openDetail(id) {
+  const ch = channels.find(c => c.id === id);
+  if (!ch) return;
+  const lvl = getLevelInfo(ch.points);
+  const badges = getBadges(ch);
+  document.getElementById("detailContent").innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+      <div class="card-avatar" style="position:static;margin-top:0;background:linear-gradient(135deg,${ch.cover},${ch.cover}88);box-shadow:0 0 20px ${ch.cover}60">${ch.avatar}</div>
+      <div>
+        <div style="font-weight:800;font-size:20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${ch.name} <span class="card-level-badge" style="background:${lvl.color}">${lvl.name}</span></div>
+        <div class="card-handle">${ch.handle}</div>
+      </div>
+    </div>
+    <p style="color:#aaa;line-height:1.8;margin-bottom:16px">${ch.description}</p>
+    <div class="card-stats" style="margin-bottom:16px">
+      <div class="card-stat"><div class="stat-icon">👥</div><div class="stat-val">${formatNum(ch.subscribers)}</div><div class="stat-label">مشترك</div></div>
+      <div class="card-stat"><div class="stat-icon">🎬</div><div class="stat-val">${ch.videos}</div><div class="stat-label">فيديو</div></div>
+      <div class="card-stat"><div class="stat-icon">⭐</div><div class="stat-val">${ch.points}</div><div class="stat-label">نقطة</div></div>
+    </div>
+    ${badges.length ? `<div style="margin-bottom:16px">
+      <div style="font-weight:700;margin-bottom:8px;color:#FF6B35">🏅 الأوسمة</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${badges.map(b=>`<span class="badge-chip" title="${b.desc}">${b.icon} ${b.name}</span>`).join("")}</div>
+    </div>` : ""}
+    <div style="margin-bottom:16px;font-size:13px;color:#888">📅 انضمت في ${ch.joined}</div>
+    <a href="${ch.url}" target="_blank" rel="noopener" style="display:block;text-align:center;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px;color:inherit;text-decoration:none;font-weight:700;margin-bottom:10px">🎬 زيارة القناة على يوتيوب وعرض الفيديوهات</a>
+    <div style="display:flex;gap:10px">
+      <button class="btn-sub ${ch.subscribed?"active":"inactive"}" style="flex:1" onclick="handleSubscribe(${ch.id})">${ch.subscribed?"✅ مشترك":"🔔 اشترك"}</button>
+      <button class="btn-like${ch.liked?" liked":""}" onclick="handleLike(${ch.id})">${ch.liked?"❤️":"🤍"} ${ch.likes}</button>
+      <button class="btn-share" onclick="shareChannel(${ch.id})">🔗 مشاركة</button>
+    </div>
+  `;
+  document.getElementById("detail-overlay").classList.add("open");
+}
+function closeDetail() {
+  document.getElementById("detail-overlay").classList.remove("open");
+}
+function closeDetailIfOutside(e) {
+  if (e.target === document.getElementById("detail-overlay")) closeDetail();
 }
 
 // ===== MY CHANNEL =====
@@ -677,6 +915,10 @@ function renderMyChannel() {
   el.innerHTML = `
   <h2 style="font-weight:800;font-size:22px;margin-bottom:24px">📺 قناتي</h2>
   <div style="max-width:400px">${cardHTML({...live, isOwn:true}, true)}</div>
+  <div style="display:flex;gap:10px;margin-top:16px;max-width:400px">
+    <button class="btn-register-now" style="flex:1;padding:12px" onclick="openEditModal()">✏️ تعديل القناة</button>
+    <button class="btn-register-now" style="flex:1;padding:12px;background:linear-gradient(135deg,#c62828,#e57373)" onclick="deleteMyChannel()">🗑️ حذف القناة</button>
+  </div>
   <div style="margin-top:28px;background:rgba(255,255,255,0.04);border-radius:16px;padding:24px;border:1px solid rgba(255,255,255,0.07)">
     <h3 style="margin-bottom:16px;color:#FF6B35">📊 إحصائيات قناتك</h3>
     <div class="stats-grid-3">
@@ -689,6 +931,7 @@ function renderMyChannel() {
 
 // ===== SUBSCRIBE =====
 function handleSubscribe(id) {
+  const prevPoints = myPoints;
   channels = channels.map(ch => {
     if (ch.id !== id) return ch;
     const was = ch.subscribed;
@@ -703,10 +946,14 @@ function handleSubscribe(id) {
     return { ...ch, subscribed: !was, subscribers: was ? ch.subscribers-1 : ch.subscribers+1 };
   });
   refresh();
+  saveState();
+  checkLevelUp(prevPoints, myPoints);
+  if (document.getElementById("detail-overlay").classList.contains("open")) openDetail(id);
 }
 
 // ===== LIKE =====
 function handleLike(id) {
+  const prevPoints = myPoints;
   channels = channels.map(ch => {
     if (ch.id !== id) return ch;
     const was = ch.liked;
@@ -721,6 +968,9 @@ function handleLike(id) {
     return { ...ch, liked: !was, likes: was ? ch.likes-1 : ch.likes+1 };
   });
   refresh();
+  saveState();
+  checkLevelUp(prevPoints, myPoints);
+  if (document.getElementById("detail-overlay").classList.contains("open")) openDetail(id);
 }
 
 // ===== REGISTER =====
@@ -741,23 +991,77 @@ function handleRegister() {
     points: 50, liked: false, subscribed: false, likes: 0,
     url: url || "https://youtube.com", isOwn: true,
   };
+  const prevPoints = myPoints;
   channels = [newCh, ...channels];
   registeredChannel = newCh;
   myPoints += 50;
   myActions = [{ type:"register", channel:name, pts:50, time:new Date().toLocaleTimeString("ar") }, ...myActions.slice(0,19)];
-  document.getElementById("fName").value="";
-  document.getElementById("fHandle").value="";
-  document.getElementById("fUrl").value="";
-  document.getElementById("fDesc").value="";
   closeModal();
   showToast("🎉 تم تسجيل قناتك بنجاح! +50 نقطة");
   switchTab("my");
   refresh();
+  saveState();
+  checkLevelUp(prevPoints, myPoints);
+}
+
+// ===== EDIT / DELETE MY CHANNEL =====
+function openEditModal() {
+  if (!registeredChannel) return;
+  const ch = channels.find(c => c.id === registeredChannel.id) || registeredChannel;
+  editingChannelId = ch.id;
+  document.getElementById("fName").value = ch.name;
+  document.getElementById("fHandle").value = ch.handle;
+  document.getElementById("fUrl").value = ch.url;
+  document.getElementById("fCategory").value = ch.category;
+  document.getElementById("fDesc").value = ch.description;
+  document.querySelector("#modal-box h2").textContent = "✏️ تعديل قناتك";
+  const btn = document.querySelector(".btn-submit");
+  btn.textContent = "💾 حفظ التعديلات";
+  btn.setAttribute("onclick", "handleSaveEdit()");
+  openModal();
+}
+function handleSaveEdit() {
+  const name = document.getElementById("fName").value.trim();
+  const handle = document.getElementById("fHandle").value.trim();
+  const url = document.getElementById("fUrl").value.trim();
+  const category = document.getElementById("fCategory").value;
+  const desc = document.getElementById("fDesc").value.trim();
+  if (!name || !handle || !desc) { showToast("يرجى ملء جميع الحقول", "error"); return; }
+  channels = channels.map(ch => ch.id === editingChannelId ? {
+    ...ch, name, handle: handle.startsWith("@") ? handle : "@"+handle,
+    url: url || ch.url, category, description: desc, avatar: name[0]
+  } : ch);
+  registeredChannel = channels.find(c => c.id === editingChannelId);
+  closeModal();
+  showToast("✅ تم تحديث بيانات قناتك بنجاح");
+  refresh();
+  saveState();
+}
+function deleteMyChannel() {
+  if (!registeredChannel) return;
+  if (!confirm("هل أنت متأكد من حذف قناتك المسجلة؟ سيتم خصم 50 نقطة وهذا الإجراء لا يمكن التراجع عنه.")) return;
+  channels = channels.filter(c => c.id !== registeredChannel.id);
+  myPoints = Math.max(0, myPoints - 50);
+  registeredChannel = null;
+  showToast("🗑️ تم حذف قناتك", "warn");
+  refresh();
+  saveState();
+}
+function resetModalToRegister() {
+  editingChannelId = null;
+  document.querySelector("#modal-box h2").textContent = "📺 تسجيل قناتك";
+  const btn = document.querySelector(".btn-submit");
+  btn.textContent = "🚀 تسجيل القناة (+50 نقطة)";
+  btn.setAttribute("onclick", "handleRegister()");
+  document.getElementById("fName").value="";
+  document.getElementById("fHandle").value="";
+  document.getElementById("fUrl").value="";
+  document.getElementById("fDesc").value="";
 }
 
 // ===== MODAL =====
 function openModal() { document.getElementById("modal-overlay").classList.add("open"); }
-function closeModal() { document.getElementById("modal-overlay").classList.remove("open"); }
+function closeModal() { document.getElementById("modal-overlay").classList.remove("open"); resetModalToRegister(); }
 function closeModalIfOutside(e) { if (e.target === document.getElementById("modal-overlay")) closeModal(); }
 
 // ===== TABS =====
@@ -784,6 +1088,8 @@ function refresh() {
 }
 
 // ===== INIT =====
+loadTheme();
+loadState();
 refresh();
 </script>
 </body>
