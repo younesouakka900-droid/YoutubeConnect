@@ -1887,14 +1887,20 @@ function applySort() {
 function cardHTML(ch, featured=false) {
   const lvl = getLevelInfo(ch.points);
   const badges = getBadges(ch);
+  const coverBg = ch.coverUrl
+    ? `url('${ch.coverUrl}') center/cover no-repeat`
+    : `linear-gradient(135deg,${ch.cover},${ch.cover}88)`;
+  const avatarHTML = ch.avatarUrl
+    ? `<img src="${ch.avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.parentElement.textContent='${ch.avatar}'">`
+    : ch.avatar;
   return `
   <div class="channel-card" style="border-color:${featured?"#FF6B3550":"rgba(255,255,255,0.07)"}" onclick="openDetail(${ch.id})">
-    <div class="card-cover" style="background:linear-gradient(135deg,${ch.cover},${ch.cover}88)">
+    <div class="card-cover" style="background:${coverBg}">
       <div class="card-cat-badge">${ch.category}</div>
       ${ch.isOwn ? '<div class="card-own-badge">⭐ قناتي</div>' : ""}
     </div>
     <div class="card-avatar-wrap">
-      <div class="card-avatar" style="background:linear-gradient(135deg,${ch.cover},${ch.cover}88);box-shadow:0 0 20px ${ch.cover}60">${ch.avatar}</div>
+      <div class="card-avatar" style="background:linear-gradient(135deg,${ch.cover},${ch.cover}88);box-shadow:0 0 20px ${ch.cover}60;overflow:hidden;display:flex;align-items:center;justify-content:center">${avatarHTML}</div>
     </div>
     <div class="card-body">
       <div class="card-name-row">
@@ -2284,14 +2290,16 @@ async function handleRegister() {
     id: Date.now(), name,
     handle: handle.startsWith("@") ? handle : "@" + handle,
     avatar: name[0], cover: coverColor,
+    avatarUrl: window._ytAvatarUrl || null,
+    coverUrl:  window._ytCoverUrl  || null,
     category, subscribers: window._ytSubs || 0, videos: window._ytVideos || 0, description: desc,
     joined: new Date().toISOString().slice(0,10),
     points: 50, liked: false, subscribed: false, likes: 0,
     url: url || "https://youtube.com", isOwn: true,
     ownerId: window._currentUser?.uid || null,
   };
-  // Reset yt data
   window._ytColor = null; window._ytSubs = null; window._ytVideos = null;
+  window._ytAvatarUrl = null; window._ytCoverUrl = null;
   document.getElementById("yt-preview").classList.remove("show");
   const prevPoints = myPoints;
   channels = [newCh, ...channels];
@@ -2516,113 +2524,159 @@ function friendlyError(code) {
 }
 
 // ===== YOUTUBE SMART FILL =====
+const YT_API_KEY = "AIzaSyAzRxV19fXvYjY_3LSmW2LVnIYrCbkaVOk";
 let ytFetchTimer = null;
 let ytPendingData = null;
 
-// Known popular Arabic channels database for instant recognition
-const YT_KNOWN = {
-  "@mkbhd": { name:"MKBHD", subs:"18م", desc:"Tech reviews and videos", color:"#212121", avatar:"M" },
-  "@mrbeast": { name:"MrBeast", subs:"350م", desc:"Crazy challenges and giveaways", color:"#FF0000", avatar:"B" },
-};
-
-// Extract channel handle/ID from URL
 function parseYtUrl(url) {
   if (!url) return null;
   url = url.trim();
-  // Patterns: youtube.com/@handle, youtube.com/c/name, youtube.com/channel/ID, youtube.com/user/name
   const patterns = [
-    /youtube\.com\/@([\w\-\.]+)/i,
-    /youtube\.com\/c\/([\w\-\.]+)/i,
-    /youtube\.com\/user\/([\w\-\.]+)/i,
-    /youtube\.com\/channel\/(UC[\w\-]+)/i,
-    /^@?([\w\-\.]{3,})$/,
+    { re: /youtube\.com\/@([\w\-\.]+)/i,        type:"handle" },
+    { re: /youtube\.com\/c\/([\w\-\.]+)/i,       type:"handle" },
+    { re: /youtube\.com\/user\/([\w\-\.]+)/i,    type:"handle" },
+    { re: /youtube\.com\/channel\/(UC[\w\-]+)/i, type:"id"     },
+    { re: /^UC[\w\-]{20,}$/,                     type:"id"     },
+    { re: /^@?([\w\-\.]{3,})$/,                  type:"handle" },
   ];
   for (const p of patterns) {
-    const m = url.match(p);
-    if (m) return m[1];
+    const m = url.match(p.re);
+    if (m) return { value: m[1], type: p.type };
   }
   return null;
 }
 
-// Generate realistic channel data based on handle
-function generateChannelData(handle, url) {
-  const h = handle.toLowerCase();
-  // Category detection from handle/URL keywords
-  const catMap = [
-    { keys:["tech","تقن","code","برمج","dev","gadget"], cat:"تقنية", color:"#FF6B35", emoji:"💻" },
-    { keys:["cook","طبخ","food","أكل","recipe","مطبخ"], cat:"طبخ", color:"#E91E8C", emoji:"🍳" },
-    { keys:["sport","رياض","fitness","gym","كرة"], cat:"رياضة", color:"#00BCD4", emoji:"⚽" },
-    { keys:["game","لعب","gaming","العاب","play"], cat:"ألعاب", color:"#9C27B0", emoji:"🎮" },
-    { keys:["travel","سفر","tour","رحل","vlogs"], cat:"سفر", color:"#4CAF50", emoji:"✈️" },
-    { keys:["learn","تعل","edu","درس","course","شرح"], cat:"تعليم", color:"#FF9800", emoji:"📚" },
-    { keys:["funny","كوميد","ترفيه","entertain","laugh"], cat:"ترفيه", color:"#F44336", emoji:"😂" },
-  ];
-  let detectedCat = { cat:"أخرى", color:"#607D8B", emoji:"📺" };
-  for (const c of catMap) {
-    if (c.keys.some(k => h.includes(k) || url.toLowerCase().includes(k))) {
-      detectedCat = c; break;
-    }
-  }
-  // Simulate subscriber count based on handle length (fun heuristic)
-  const seed = h.split("").reduce((a,c) => a + c.charCodeAt(0), 0);
-  const subRanges = [500, 1200, 3400, 8700, 15000, 28000, 52000, 130000];
-  const subs = subRanges[seed % subRanges.length];
-  const videos = 20 + (seed % 180);
-  const subsLabel = subs >= 1000 ? (subs/1000).toFixed(1) + "ك" : subs;
+function formatSubs(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1) + "م";
+  if (n >= 1000)    return (n/1000).toFixed(1) + "ك";
+  return String(n);
+}
 
-  return {
-    name: handle.startsWith("@") ? handle.slice(1) : handle,
-    handle: handle.startsWith("@") ? handle : "@" + handle,
-    category: detectedCat.cat,
-    color: detectedCat.color,
-    emoji: detectedCat.emoji,
-    subs, subsLabel, videos,
-    description: `قناة ${detectedCat.cat} — ${detectedCat.emoji} محتوى متنوع ومميز`,
-    avatar: (handle.replace("@","")[0] || "ق").toUpperCase(),
-    // YouTube thumbnail URL format (public, no API key needed)
-    thumbUrl: null,
-  };
+function detectCategory(title, desc) {
+  const text = (title + " " + desc).toLowerCase();
+  const cats = [
+    { keys:["tech","تقن","code","برمج","dev","gadget","كمبيوتر"],  cat:"تقنية",  color:"#FF6B35" },
+    { keys:["cook","طبخ","food","أكل","recipe","مطبخ","وصفة"],     cat:"طبخ",    color:"#E91E8C" },
+    { keys:["sport","رياض","fitness","gym","كرة","football"],       cat:"رياضة",  color:"#00BCD4" },
+    { keys:["game","لعب","gaming","العاب","play","ببجي","فورت"],    cat:"ألعاب",  color:"#9C27B0" },
+    { keys:["travel","سفر","tour","رحل","vlog","سياح"],             cat:"سفر",    color:"#4CAF50" },
+    { keys:["learn","تعل","edu","درس","course","شرح","تعليم"],     cat:"تعليم",  color:"#FF9800" },
+    { keys:["funny","كوميد","ترفيه","entertain","مقلب","ضحك"],    cat:"ترفيه",  color:"#F44336" },
+    { keys:["دين","إسلام","قرآن","muslim","islam"],                 cat:"ديني",   color:"#009688" },
+    { keys:["music","موسيق","أغاني","song","ناشيد"],               cat:"موسيقى", color:"#673AB7" },
+  ];
+  for (const c of cats) if (c.keys.some(k => text.includes(k))) return c;
+  return { cat:"أخرى", color:"#607D8B" };
 }
 
 function onUrlInput() {
   clearTimeout(ytFetchTimer);
   const url = document.getElementById("fUrl").value.trim();
   const preview = document.getElementById("yt-preview");
-  if (!url || url.length < 5) { preview.classList.remove("show"); ytPendingData = null; return; }
-  const handle = parseYtUrl(url);
-  if (!handle) { preview.classList.remove("show"); ytPendingData = null; return; }
-  document.getElementById("yt-fetch-status").textContent = "⏳ جاري تحليل الرابط...";
+  if (!url || url.length < 3) { preview.classList.remove("show"); ytPendingData = null; return; }
+  const parsed = parseYtUrl(url);
+  if (!parsed) { preview.classList.remove("show"); ytPendingData = null; return; }
+  document.getElementById("yt-fetch-status").textContent = "⏳ جاري جلب بيانات القناة من يوتيوب...";
   preview.classList.add("show");
-  ytFetchTimer = setTimeout(() => smartFetchChannel(handle, url), 600);
+  ytFetchTimer = setTimeout(() => fetchChannelFromYT(parsed, url), 700);
 }
 
-function smartFetchChannel(handle, url) {
-  const data = generateChannelData(handle, url);
-  ytPendingData = { ...data, url };
+async function fetchChannelFromYT(parsed, originalUrl) {
+  const statusEl = document.getElementById("yt-fetch-status");
+  try {
+    let apiUrl;
+    if (parsed.type === "id") {
+      apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,brandingSettings&id=${parsed.value}&key=${YT_API_KEY}`;
+    } else {
+      apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,brandingSettings&forHandle=${encodeURIComponent(parsed.value)}&key=${YT_API_KEY}`;
+    }
+    const res = await fetch(apiUrl);
+    const json = await res.json();
+
+    if (json.error) {
+      statusEl.textContent = "⚠️ خطأ في API: " + json.error.message;
+      return;
+    }
+    if (!json.items || json.items.length === 0) {
+      // Try forUsername fallback
+      const res2 = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,brandingSettings&forUsername=${encodeURIComponent(parsed.value)}&key=${YT_API_KEY}`);
+      const json2 = await res2.json();
+      if (!json2.items || json2.items.length === 0) {
+        statusEl.textContent = "❌ لم يتم العثور على القناة — تأكد من الرابط";
+        return;
+      }
+      processChannelData(json2.items[0], originalUrl);
+      return;
+    }
+    processChannelData(json.items[0], originalUrl);
+
+  } catch(e) {
+    statusEl.textContent = "❌ تعذر الاتصال — تحقق من الإنترنت";
+    console.error(e);
+  }
+}
+
+function processChannelData(item, originalUrl) {
+  const sn   = item.snippet;
+  const stat = item.statistics || {};
+  const brand= item.brandingSettings || {};
+
+  const name     = sn.title || "";
+  const desc     = sn.description?.split("\n")[0] || "";
+  const subs     = parseInt(stat.subscriberCount || 0);
+  const videos   = parseInt(stat.videoCount || 0);
+  const subsLabel= formatSubs(subs);
+  const handle   = sn.customUrl || ("@" + name.replace(/\s+/g,""));
+  const avatar   = sn.thumbnails?.high?.url || sn.thumbnails?.default?.url || null;
+  const cover    = brand.image?.bannerExternalUrl || null;
+  const catInfo  = detectCategory(name, desc);
+
+  ytPendingData = {
+    name, handle, desc, subs, subsLabel, videos,
+    category: catInfo.cat, color: catInfo.color,
+    avatarUrl: avatar, coverUrl: cover,
+    url: originalUrl,
+  };
+
   // Update preview UI
-  document.getElementById("yt-title-el").textContent = data.name;
-  document.getElementById("yt-subs-el").textContent = `👥 ${data.subsLabel} مشترك تقريباً • 🎬 ${data.videos} فيديو`;
-  document.getElementById("yt-desc-el").textContent = data.description;
-  document.getElementById("yt-thumb-el").textContent = data.avatar;
-  document.getElementById("yt-thumb-el").style.background = `linear-gradient(135deg,${data.color},${data.color}88)`;
-  // Cover area
+  document.getElementById("yt-title-el").textContent = name;
+  document.getElementById("yt-subs-el").textContent = `👥 ${subsLabel} مشترك • 🎬 ${videos} فيديو`;
+  document.getElementById("yt-desc-el").textContent = desc || "لا يوجد وصف";
+
+  // Avatar
+  const thumbEl = document.getElementById("yt-thumb-el");
+  if (avatar) {
+    thumbEl.innerHTML = `<img src="${avatar}" style="width:48px;height:48px;border-radius:50%;object-fit:cover" onerror="this.parentElement.textContent='${name[0]?.toUpperCase()||'ق'}'">`;
+    thumbEl.style.background = "transparent";
+  } else {
+    thumbEl.textContent = name[0]?.toUpperCase() || "ق";
+    thumbEl.style.background = `linear-gradient(135deg,${catInfo.color},${catInfo.color}88)`;
+  }
+
+  // Cover banner
   const coverEl = document.getElementById("yt-cover-area");
-  coverEl.innerHTML = `<div style="width:100%;height:80px;background:linear-gradient(135deg,${data.color}cc,${data.color}44,#0A0A0F);display:flex;align-items:center;justify-content:center;font-size:32px">${data.emoji}</div>`;
-  document.getElementById("yt-fetch-status").textContent = `✅ تم تحليل الرابط — اضغط "تعبئة تلقائية" لملء البيانات`;
+  if (cover) {
+    coverEl.innerHTML = `<img src="${cover}" style="width:100%;height:80px;object-fit:cover;display:block" onerror="this.parentElement.innerHTML='<div style=\\'width:100%;height:80px;background:linear-gradient(135deg,${catInfo.color}cc,#0A0A0F);display:flex;align-items:center;justify-content:center;font-size:28px\\'>📺</div>'">`;
+  } else {
+    coverEl.innerHTML = `<div style="width:100%;height:80px;background:linear-gradient(135deg,${catInfo.color}cc,${catInfo.color}44,#0A0A0F);display:flex;align-items:center;justify-content:center;font-size:28px">📺</div>`;
+  }
+
+  document.getElementById("yt-fetch-status").textContent = `✅ تم جلب بيانات القناة من يوتيوب — اضغط "تعبئة تلقائية"`;
 }
 
 function applyYtData() {
   if (!ytPendingData) return;
   const d = ytPendingData;
   document.getElementById("fName").value = d.name;
-  document.getElementById("fHandle").value = d.handle;
+  document.getElementById("fHandle").value = d.handle.startsWith("@") ? d.handle : "@"+d.handle;
   document.getElementById("fCategory").value = d.category;
-  document.getElementById("fDesc").value = d.description;
-  // Store color for card
-  window._ytColor = d.color;
-  window._ytSubs = d.subs;
-  window._ytVideos = d.videos;
-  showToast("✅ تم ملء البيانات تلقائياً! راجعها قبل التسجيل");
+  document.getElementById("fDesc").value = d.desc || "";
+  window._ytColor    = d.color;
+  window._ytSubs     = d.subs;
+  window._ytVideos   = d.videos;
+  window._ytAvatarUrl= d.avatarUrl;
+  window._ytCoverUrl = d.coverUrl;
+  showToast("✅ تم ملء البيانات الحقيقية من يوتيوب!");
 }
 
 // ===== PIN / FAVORITES =====
