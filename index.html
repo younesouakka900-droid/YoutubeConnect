@@ -176,56 +176,70 @@
     .channels-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
+      gap: 24px;
+      padding-bottom: 8px;
     }
     /* Card */
     .channel-card {
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 20px; overflow: hidden;
+      border-radius: 20px; overflow: visible;
       transition: transform 0.2s, box-shadow 0.2s;
+      position: relative; margin-bottom: 4px;
     }
     .channel-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 12px 40px rgba(0,0,0,0.4);
     }
-    .card-cover { height: 80px; position: relative; }
+    .card-cover {
+      height: 90px; position: relative;
+      border-radius: 20px 20px 0 0; overflow: hidden;
+    }
     .card-cat-badge {
-      position: absolute; top: 12px; left: 12px;
-      background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
-      border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600;
+      position: absolute; top: 10px; left: 10px;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+      border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 700;
     }
     .card-own-badge {
-      position: absolute; top: 12px; right: 12px;
-      background: #FF6B35; border-radius: 20px; padding: 4px 12px;
-      font-size: 12px; font-weight: 700;
+      position: absolute; top: 10px; right: 10px;
+      background: #FF6B35; border-radius: 20px; padding: 3px 10px;
+      font-size: 11px; font-weight: 700;
     }
-    .card-avatar-wrap { padding: 0 20px; }
+    .card-avatar-wrap {
+      padding: 0 16px;
+      height: 0;
+      position: relative;
+      z-index: 2;
+    }
     .card-avatar {
-      width: 60px; height: 60px; border-radius: 50%;
+      width: 58px; height: 58px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 900; font-size: 26px; margin-top: -30px;
+      font-weight: 900; font-size: 24px;
       border: 3px solid #0A0A0F;
+      position: absolute;
+      top: -29px;
+      right: 16px;
+      overflow: hidden;
     }
-    .card-body { padding: 12px 20px 0; }
-    .card-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-    .card-name { font-weight: 800; font-size: 17px; }
+    .card-body { padding: 36px 16px 16px; }
+    .card-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+    .card-name { font-weight: 800; font-size: 16px; }
     .card-level-badge {
       color: #000; border-radius: 8px;
-      padding: 2px 8px; font-size: 11px; font-weight: 700;
+      padding: 2px 7px; font-size: 11px; font-weight: 700;
     }
-    .card-handle { color: #888; font-size: 13px; margin-bottom: 8px; }
+    .card-handle { color: #888; font-size: 12px; margin-bottom: 8px; }
     .card-desc {
-      color: #aaa; font-size: 13px; line-height: 1.6;
-      margin-bottom: 16px;
+      color: #aaa; font-size: 12px; line-height: 1.6;
+      margin-bottom: 12px;
       display: -webkit-box; -webkit-line-clamp: 2;
       -webkit-box-orient: vertical; overflow: hidden;
     }
-    .card-stats { display: flex; gap: 16px; margin-bottom: 16px; }
+    .card-stats { display: flex; gap: 8px; margin-bottom: 14px; }
     .card-stat { text-align: center; flex: 1; }
-    .card-stat .stat-icon { font-size: 16px; }
-    .card-stat .stat-val { font-weight: 800; font-size: 15px; }
-    .card-stat .stat-label { font-size: 11px; color: #888; }
+    .card-stat .stat-icon { font-size: 14px; }
+    .card-stat .stat-val { font-weight: 800; font-size: 14px; }
+    .card-stat .stat-label { font-size: 10px; color: #888; }
     .card-actions { display: flex; gap: 10px; padding-bottom: 20px; }
     .btn-sub {
       flex: 1; padding: 10px;
@@ -343,7 +357,15 @@
     @media (max-width: 600px) {
       .points-grid-2, .earn-grid, .stats-grid-3 { grid-template-columns: 1fr; }
       .header-right .points-badge { display: none; }
-      .tab-btn { padding: 12px 10px; font-size: 12px; }
+      .tab-btn { padding: 10px 8px; font-size: 11px; }
+      .channels-grid { grid-template-columns: 1fr; gap: 20px; }
+      .rewards-grid { grid-template-columns: 1fr 1fr; }
+      main { padding: 16px 14px; }
+      .card-body { padding: 34px 14px 14px; }
+      .card-avatar { right: 14px; }
+      .card-actions { gap: 6px; }
+      .btn-sub { font-size: 13px; padding: 10px 14px; }
+      #header { padding: 10px 14px; }
     }
     /* ===== New additions ===== */
     .theme-toggle {
@@ -1894,13 +1916,14 @@ function cardHTML(ch, featured=false) {
     ? `<img src="${ch.avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.parentElement.textContent='${ch.avatar}'">`
     : ch.avatar;
   return `
-  <div class="channel-card" style="border-color:${featured?"#FF6B3550":"rgba(255,255,255,0.07)"}" onclick="openDetail(${ch.id})">
+  <div class="channel-card" style="border-color:${featured?"#FF6B3550":"rgba(255,255,255,0.07)"}">
+    <div onclick="openDetail(${ch.id})" style="cursor:pointer">
     <div class="card-cover" style="background:${coverBg}">
       <div class="card-cat-badge">${ch.category}</div>
       ${ch.isOwn ? '<div class="card-own-badge">⭐ قناتي</div>' : ""}
     </div>
     <div class="card-avatar-wrap">
-      <div class="card-avatar" style="background:linear-gradient(135deg,${ch.cover},${ch.cover}88);box-shadow:0 0 20px ${ch.cover}60;overflow:hidden;display:flex;align-items:center;justify-content:center">${avatarHTML}</div>
+      <div class="card-avatar" style="background:linear-gradient(135deg,${ch.cover},${ch.cover}88);box-shadow:0 0 16px ${ch.cover}60;">${avatarHTML}</div>
     </div>
     <div class="card-body">
       <div class="card-name-row">
@@ -1909,23 +1932,24 @@ function cardHTML(ch, featured=false) {
       </div>
       <div class="card-handle">${ch.handle}</div>
       <p class="card-desc">${ch.description}</p>
-      ${badges.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${badges.map(b=>`<span class="badge-chip" title="${b.desc}">${b.icon} ${b.name}</span>`).join("")}</div>` : ""}
+      ${badges.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${badges.map(b=>`<span class="badge-chip" title="${b.desc}">${b.icon} ${b.name}</span>`).join("")}</div>` : ""}
       <div class="card-stats">
         <div class="card-stat"><div class="stat-icon">👥</div><div class="stat-val">${formatNum(ch.subscribers)}</div><div class="stat-label">مشترك</div></div>
         <div class="card-stat"><div class="stat-icon">🎬</div><div class="stat-val">${ch.videos}</div><div class="stat-label">فيديو</div></div>
         <div class="card-stat"><div class="stat-icon">⭐</div><div class="stat-val">${ch.points}</div><div class="stat-label">نقطة</div></div>
       </div>
-      <div class="card-actions">
-        <button class="btn-sub ${ch.subscribed?"active":"inactive"}" onclick="event.stopPropagation();handleSubscribe(${ch.id})">
-          ${ch.subscribed?"✅ مشترك":"🔔 اشترك"}
-        </button>
-        <button class="btn-like${ch.liked?" liked":""}" onclick="event.stopPropagation();handleLike(${ch.id})">
-          ${ch.liked?"❤️":"🤍"} ${ch.likes}
-        </button>
-        <button class="btn-share" onclick="event.stopPropagation();shareChannel(${ch.id})" title="مشاركة">🔗</button>
-        <button class="btn-share" onclick="event.stopPropagation();openProfile(${ch.id})" title="الملف الشخصي">👤</button>
-        <button class="btn-pin${ch.pinned?" pinned":""}" onclick="event.stopPropagation();togglePin(${ch.id})" title="${ch.pinned?"إزالة من المفضلة":"إضافة للمفضلة"}">${ch.pinned?"📌":"📌"}</button>
-      </div>
+    </div>
+    </div>
+    <div style="padding:0 14px 16px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn-sub ${ch.subscribed?"active":"inactive"}" onclick="handleSubscribe(${ch.id})">
+        ${ch.subscribed?"✅ مشترك":"🔔 اشترك"}
+      </button>
+      <button class="btn-like${ch.liked?" liked":""}" onclick="handleLike(${ch.id})">
+        ${ch.liked?"❤️":"🤍"} ${ch.likes}
+      </button>
+      <button class="btn-share" onclick="shareChannel(${ch.id})" title="مشاركة">🔗</button>
+      <button class="btn-share" onclick="openProfile(${ch.id})" title="الملف الشخصي">👤</button>
+      <button class="btn-pin${pinnedChannels.has(ch.id)?" pinned":""}" onclick="togglePin(${ch.id})" title="مفضلة">📌</button>
     </div>
   </div>`;
 }
