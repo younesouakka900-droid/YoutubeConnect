@@ -13,7 +13,8 @@
              sendEmailVerification
            } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, updateDoc, collection,
-             onSnapshot, query, orderBy, addDoc, serverTimestamp, getDocs, deleteDoc, where
+             onSnapshot, query, orderBy, addDoc, serverTimestamp, getDocs, deleteDoc, where,
+             runTransaction, increment, limit
            } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -55,6 +56,9 @@
     window._fsGetDocs = getDocs;
     window._fsDeleteDoc = deleteDoc;
     window._fsWhere = where;
+    window._fsRunTransaction = runTransaction;
+    window._fsIncrement = increment;
+    window._fsLimit = limit;
 
     onAuthStateChanged(auth, (user) => {
       window._currentUser = user;
@@ -990,6 +994,11 @@
     .msg-ch-info { flex:1; }
     .msg-ch-name { font-weight:700; font-size:14px; }
     .msg-ch-last { font-size:12px; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px; }
+    .msg-unread-dot {
+      background:#E91E8C; color:#fff; border-radius:50%; min-width:18px; height:18px;
+      font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center;
+      flex-shrink:0; padding:0 4px;
+    }
     .msg-layout { display:flex; flex:1; overflow:hidden; }
     .msg-sidebar { width:180px; border-left:1px solid rgba(255,255,255,0.07); overflow-y:auto; padding:8px; }
     .msg-main { flex:1; display:flex; flex-direction:column; }
@@ -1760,10 +1769,19 @@ let weeklySubIds = new Set();
 let challengeCompleted = false;
 // NEW: favorites, messages, rewards
 let pinnedChannels = new Set();
-let messages = {}; // { channelId: [{text, sent, time, author}] }
-let activeConvId = null;
+let activeConvId = null; // currently open channel id in the messages panel
 let claimedRewards = new Set();
 let unreadMsgCount = 0;
+// REAL DATA (replacing simulated fields):
+let mySubscriptions = new Set();      // channelIds (string) the CURRENT user really subscribed to (from users/{uid}/subscriptions)
+let myLikedChannels = new Set();      // channelIds (string) the CURRENT user really liked (from users/{uid}/likes)
+let channelSubscriberUids = {};       // { channelId: Set(uid) } — who really subscribes to each channel (for followers list / mutual exchange)
+let msgConvUnsubscribe = null;        // active onSnapshot listener for open conversation
+let msgSidebarUnsubscribe = null;     // active onSnapshot listener for conversation list
+let myConversationsAsVisitor = [];    // conversations I (as a visitor) started with channels
+let myConversationsAsOwner = [];      // conversations other people started with MY channel (if I own one)
+let activeConvMessages = [];          // real messages of the open conversation, from Firestore
+let activeConvOwnerView = null;       // if set, we're viewing a conversation as the channel owner (conv id)
 // Weekly challenge start date (Monday of current week)
 function getWeekKey() {
   const now = new Date();
@@ -1833,13 +1851,170 @@ async function loadUserDataFS() {
   } catch(e) { console.warn("Firestore load error", e); return null; }
 }
 
+// ===== REAL SUBSCRIPTIONS (users/{uid}/subscriptions/{channelId}) =====
+// Replaces the old broken design where "subscribed" lived on the shared channel doc
+// (which made one user's subscription appear to belong to every user).
+async function loadMySubscriptionsFS() {
+  const user = window._currentUser;
+  if (!user || !window._db) return new Set();
+  try {
+    const ref = window._fsCollection(window._db, "users", user.uid, "subscriptions");
+    const snap = await window._fsGetDocs(ref);
+    const ids = new Set();
+    snap.forEach(d => ids.add(d.id));
+    return ids;
+  } catch(e) { console.warn("Load subscriptions error", e); return new Set(); }
+}
+
+async function loadMyLikesFS() {
+  const user = window._currentUser;
+  if (!user || !window._db) return new Set();
+  try {
+    const ref = window._fsCollection(window._db, "users", user.uid, "likes");
+    const snap = await window._fsGetDocs(ref);
+    const ids = new Set();
+    snap.forEach(d => ids.add(d.id));
+    return ids;
+  } catch(e) { console.warn("Load likes error", e); return new Set(); }
+}
+
+// Subscribe/unsubscribe with a transaction so the subscriber count, the per-user
+// subscription doc, and the flattened "who follows this channel" doc all move together —
+// no two users can ever corrupt each other's state.
+async function setSubscriptionFS(channelId, subscribing) {
+  const user = window._currentUser;
+  if (!user || !window._db) return false;
+  const chId = String(channelId);
+  const subRef    = window._fsDoc(window._db, "users", user.uid, "subscriptions", chId);
+  const chRef     = window._fsDoc(window._db, "channels", chId);
+  const followRef = window._fsDoc(window._db, "channelSubscribers", chId, "uids", user.uid);
+  try {
+    await window._fsRunTransaction(window._db, async (tx) => {
+      const subSnap = await tx.get(subRef);
+      const alreadySubscribed = subSnap.exists();
+      if (subscribing === alreadySubscribed) return; // no-op, prevents double counting
+      const chSnap = await tx.get(chRef);
+      const currentSubs = chSnap.exists() ? (chSnap.data().subscribers || 0) : 0;
+      if (subscribing) {
+        tx.set(subRef, { subscribedAt: window._fsServerTimestamp(), channelId: chId });
+        tx.set(followRef, { uid: user.uid, since: window._fsServerTimestamp() });
+        tx.set(chRef, { subscribers: currentSubs + 1 }, { merge: true });
+      } else {
+        tx.delete(subRef);
+        tx.delete(followRef);
+        tx.set(chRef, { subscribers: Math.max(0, currentSubs - 1) }, { merge: true });
+      }
+    });
+    return true;
+  } catch(e) { console.warn("Subscription transaction error", e); return false; }
+}
+
+async function setLikeFS(channelId, liking) {
+  const user = window._currentUser;
+  if (!user || !window._db) return false;
+  const chId = String(channelId);
+  const likeRef = window._fsDoc(window._db, "users", user.uid, "likes", chId);
+  const chRef   = window._fsDoc(window._db, "channels", chId);
+  try {
+    await window._fsRunTransaction(window._db, async (tx) => {
+      const likeSnap = await tx.get(likeRef);
+      const alreadyLiked = likeSnap.exists();
+      if (liking === alreadyLiked) return;
+      const chSnap = await tx.get(chRef);
+      const currentLikes = chSnap.exists() ? (chSnap.data().likes || 0) : 0;
+      if (liking) {
+        tx.set(likeRef, { likedAt: window._fsServerTimestamp() });
+        tx.set(chRef, { likes: currentLikes + 1 }, { merge: true });
+      } else {
+        tx.delete(likeRef);
+        tx.set(chRef, { likes: Math.max(0, currentLikes - 1) }, { merge: true });
+      }
+    });
+    return true;
+  } catch(e) { console.warn("Like transaction error", e); return false; }
+}
+
+// Real followers of a channel — read from the flattened channelSubscribers/{channelId}/uids
+// collection that setSubscriptionFS keeps in sync. Used for the followers list and for
+// computing a genuine "mutual exchange" between two channel owners.
+async function loadChannelFollowersFS(channelId) {
+  if (!window._db) return [];
+  try {
+    const ref = window._fsCollection(window._db, "channelSubscribers", String(channelId), "uids");
+    const snap = await window._fsGetDocs(ref);
+    const uids = [];
+    snap.forEach(d => uids.push(d.id));
+    return uids;
+  } catch(e) { return []; }
+}
+
+// Loads real follower uid-sets for every channel currently in memory, so the UI
+// (followers row, mutual-exchange badge, "subscribed channels" list) reflects reality
+// instead of a random subset of the locally cached channel list.
+// Debounced: the channels listener can fire often (any like/sub by anyone), and this
+// does one Firestore query per channel, so we don't want to re-run it on every tick.
+let _followerRefreshTimer = null;
+function refreshAllFollowerSets() {
+  return new Promise(resolve => {
+    if (_followerRefreshTimer) clearTimeout(_followerRefreshTimer);
+    _followerRefreshTimer = setTimeout(async () => {
+      const results = await Promise.all(channels.map(async ch => {
+        const uids = await loadChannelFollowersFS(ch.id);
+        return [String(ch.id), new Set(uids)];
+      }));
+      channelSubscriberUids = Object.fromEntries(results);
+      resolve();
+    }, 800);
+  });
+}
+
+// ===== REAL SUBSCRIBER-GROWTH HISTORY (channels/{id}/subscriberHistory/{date}) =====
+// Replaces the old Math.random() "simulated" 6-month chart. We only ever have real
+// numbers from the moment this feature shipped, so the chart starts empty and fills in
+// day by day — no invented history.
+async function recordSubscriberSnapshot(channelId, subscribers) {
+  if (!window._db) return;
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const ref = window._fsDoc(window._db, "channels", String(channelId), "subscriberHistory", today);
+    await window._fsSetDoc(ref, { date: today, subscribers }, { merge: true });
+  } catch(e) { console.warn("Snapshot error", e); }
+}
+
+// Records today's snapshot for every channel we just received from the live listener.
+// Guarded so we only write once per channel per day per session — Firestore merge
+// already makes repeat writes harmless, but this avoids needless traffic on every
+// minor snapshot update (e.g. someone else liking a channel).
+const _snapshotWrittenToday = new Set();
+function recordAllSubscriberSnapshots() {
+  const today = new Date().toISOString().slice(0,10);
+  channels.forEach(ch => {
+    const key = `${ch.id}_${today}`;
+    if (_snapshotWrittenToday.has(key)) return;
+    _snapshotWrittenToday.add(key);
+    recordSubscriberSnapshot(ch.id, ch.subscribers);
+  });
+}
+
+async function loadSubscriberHistoryFS(channelId, days = 30) {
+  if (!window._db) return [];
+  try {
+    const ref = window._fsCollection(window._db, "channels", String(channelId), "subscriberHistory");
+    const q = window._fsQuery(ref, window._fsOrderBy("date", "desc"), window._fsLimit(days));
+    const snap = await window._fsGetDocs(q);
+    const rows = [];
+    snap.forEach(d => rows.push(d.data()));
+    return rows.reverse(); // chronological order
+  } catch(e) { console.warn("Load history error", e); return []; }
+}
+
 // ===== PERSISTENCE (Firestore + localStorage fallback) =====
 async function saveState() {
-  const state = { channels, myPoints, myActions, registeredChannel,
+  const state = { myPoints, myActions, registeredChannel,
     weeklySubCount, weeklySubIds: [...weeklySubIds], challengeCompleted,
     weekKey: getWeekKey(),
     pinnedChannels: [...pinnedChannels],
-    messages, claimedRewards: [...claimedRewards] };
+    claimedRewards: [...claimedRewards] };
   try { localStorage.setItem("ytc_state", JSON.stringify(state)); } catch(e) {}
   await saveUserDataFS({ appState: state, updatedAt: new Date().toISOString() });
 }
@@ -1856,13 +2031,15 @@ async function loadState() {
       if (raw) state = JSON.parse(raw);
     } catch(e) {}
   }
+  // Real subscriptions/likes always come from Firestore per-user subcollections,
+  // never from the old simulated localStorage/channel-doc fields.
+  mySubscriptions = await loadMySubscriptionsFS();
+  myLikedChannels = await loadMyLikesFS();
   if (!state) return;
-  if (Array.isArray(state.channels)) channels = state.channels;
   if (typeof state.myPoints === "number") myPoints = state.myPoints;
   if (Array.isArray(state.myActions)) myActions = state.myActions;
   if (state.registeredChannel) registeredChannel = state.registeredChannel;
   if (Array.isArray(state.pinnedChannels)) pinnedChannels = new Set(state.pinnedChannels);
-  if (state.messages) messages = state.messages;
   if (Array.isArray(state.claimedRewards)) claimedRewards = new Set(state.claimedRewards);
   // Weekly challenge — reset if new week
   const currentWeek = getWeekKey();
@@ -1881,22 +2058,23 @@ function subscribeToChannels() {
   document.getElementById("fs-loading").style.display = "block";
   try {
     const q = window._fsQuery(window._fsCollection(window._db, "channels"), window._fsOrderBy("joined", "desc"));
-    unsubscribeFirestore = window._fsOnSnapshot(q, (snap) => {
+    unsubscribeFirestore = window._fsOnSnapshot(q, async (snap) => {
       document.getElementById("fs-loading").style.display = "none";
       if (!snap.empty) {
-        const fsChannels = snap.docs.map(d => ({ ...d.data(), _fsId: d.id }));
-        // Merge with local state (subscribed/liked per user)
-        channels = fsChannels.map(fc => {
-          const local = channels.find(lc => String(lc.id) === String(fc.id));
-          return { ...fc, subscribed: local?.subscribed || false, liked: local?.liked || false };
-        });
-        // Add default channels if Firestore is empty-ish
-        if (channels.length === 0) channels = [...DEFAULT_CHANNELS];
+        const fsChannels = snap.docs.map(d => ({ ...d.data(), id: d.data().id ?? d.id, _fsId: d.id }));
+        // "subscribed"/"liked" are derived from the CURRENT user's real subscriptions/likes,
+        // never trusted from the shared channel document (that was the old simulated design).
+        channels = fsChannels.map(fc => ({
+          ...fc,
+          subscribed: mySubscriptions.has(String(fc.id)),
+          liked: myLikedChannels.has(String(fc.id)),
+        }));
         refresh();
+        recordAllSubscriberSnapshots();
+        refreshAllFollowerSets().then(refresh);
       } else {
-        // Seed Firestore with default channels
-        document.getElementById("fs-loading").style.display = "none";
-        refresh();
+        // Seed Firestore with default channels once, so every user sees the same shared data.
+        seedDefaultChannelsFS();
       }
     }, (err) => {
       document.getElementById("fs-loading").style.display = "none";
@@ -1907,11 +2085,24 @@ function subscribeToChannels() {
   }
 }
 
+async function seedDefaultChannelsFS() {
+  if (!window._db) return;
+  try {
+    for (const ch of DEFAULT_CHANNELS) {
+      const { subscribed, liked, ...pure } = ch; // never seed per-user fields
+      await window._fsSetDoc(window._fsDoc(window._db, "channels", String(ch.id)), pure, { merge: true });
+    }
+  } catch(e) { console.warn("Seed error", e); }
+  document.getElementById("fs-loading").style.display = "none";
+}
+
 async function saveChannelToFS(ch) {
   if (!window._db) return;
   try {
+    // Never write the per-user fields onto the shared channel document.
+    const { subscribed, liked, ...pure } = ch;
     const ref = window._fsDoc(window._db, "channels", String(ch.id));
-    await window._fsSetDoc(ref, ch, { merge: true });
+    await window._fsSetDoc(ref, pure, { merge: true });
   } catch(e) { console.warn("Channel FS save error", e); }
 }
 
@@ -2490,15 +2681,25 @@ function openProfile(id) {
   // YT link
   document.getElementById("pvYtBtn").href = ch.url || "https://youtube.com";
 
-  // Check mutual exchange (both subscribed to each other)
-  const myChId  = registeredChannel?.id;
-  const mutual  = myChId && ch.subscribed && channels.find(c => c.id === myChId)?.subscribed;
+  // Real mutual exchange: the OWNER of this channel must be subscribed (as a real uid)
+  // to MY registered channel, AND I must be subscribed to this channel.
+  const myChId = registeredChannel?.id;
+  const iAmSubscribed = mySubscriptions.has(String(id));
+  const ownerSubscribedToMe = !!(myChId && ch.ownerId && channelSubscriberUids[String(myChId)]?.has(ch.ownerId));
+  const mutual = iAmSubscribed && ownerSubscribedToMe;
 
-  // Channels this user subscribed to (simulate: random subset)
-  const subbed = channels.filter(c => c.id !== id && c.subscribed).slice(0,6);
+  // Real list of channels owned by people this channel's owner is subscribed to is not
+  // directly knowable client-side without extra reads, so instead we show: channels that
+  // share a real subscriber with this one (people who follow both) is overkill for now —
+  // show the channels *I* am really subscribed to instead, when viewing my own profile,
+  // and otherwise show nothing misleading.
+  const subbed = (registeredChannel?.id === id)
+    ? channels.filter(c => c.id !== id && mySubscriptions.has(String(c.id))).slice(0,6)
+    : [];
 
-  // Followers (channels that subscribed to this one — simulate)
-  const followers = channels.filter(c => c.id !== id && c.likes > 0).slice(0,8);
+  // Real followers: every channel whose owner uid appears in this channel's subscriber set.
+  const subscriberUidSet = channelSubscriberUids[String(id)] || new Set();
+  const followers = channels.filter(c => c.id !== id && c.ownerId && subscriberUidSet.has(c.ownerId)).slice(0,8);
 
   // Achievements
   const achievements = [
@@ -2564,7 +2765,8 @@ function openProfile(id) {
     <div class="pv-section-title">📺 مشترك في <span>${subbed.length} قناة</span></div>
     <div class="pv-ch-list">
       ${subbed.map(s => {
-        const mutual2 = s.subscribed && ch.subscribed;
+        // Real mutual exchange: s's owner is really subscribed (by uid) to my channel.
+        const mutual2 = !!(myChId && s.ownerId && channelSubscriberUids[String(myChId)]?.has(s.ownerId));
         return `
         <div class="pv-ch-item" onclick="closeProfile();setTimeout(()=>openProfile(${s.id}),200)">
           <div class="pv-ch-av" style="background:linear-gradient(135deg,${s.cover},${s.cover}88)">
@@ -2619,8 +2821,7 @@ function pvToggleSub() {
 
 function pvStartMsg() {
   closeProfile();
-  activeConvId = pvChannelId;
-  setTimeout(() => { openMessages(); renderMsgSidebar(); renderMsgList(); }, 200);
+  setTimeout(() => { openMessages(); openConversation(pvChannelId); }, 200);
 }
 
 function closeProfile() {
@@ -2733,75 +2934,106 @@ function renderMyChannel() {
 }
 
 // ===== SUBSCRIBE =====
-function handleSubscribe(id) {
+async function handleSubscribe(id) {
+  const chId = String(id);
+  const ch = channels.find(c => String(c.id) === chId);
+  if (!ch) return;
+  const was = mySubscriptions.has(chId);
   const prevPoints = myPoints;
-  channels = channels.map(ch => {
-    if (ch.id !== id) return ch;
-    const was = ch.subscribed;
-    if (!was) {
-      myPoints += 15;
-      myActions = [{ type:"sub", channel:ch.name, pts:15, time:new Date().toLocaleTimeString("ar") }, ...myActions.slice(0,19)];
-      showToast(`✅ اشتركت في ${ch.name} | +15 نقطة`);
-      // Notification to subscriber (simulated — in real app you'd notify channel owner)
-      addNotification("🔔", `اشتركت للتو في قناة ${ch.name}`);
-      // Weekly challenge
-      if (!weeklySubIds.has(id)) {
-        weeklySubIds.add(id);
-        weeklySubCount++;
-        updateWeeklyChallenge();
-      }
-    } else {
-      myPoints = Math.max(0, myPoints - 15);
-      showToast(`❌ ألغيت الاشتراك في ${ch.name} | -15 نقطة`, "warn");
-      if (weeklySubIds.has(id)) {
-        weeklySubIds.delete(id);
-        weeklySubCount = Math.max(0, weeklySubCount - 1);
-        updateWeeklyChallenge();
-      }
-    }
-    const updated = { ...ch, subscribed: !was, subscribers: was ? ch.subscribers-1 : ch.subscribers+1 };
-    // Update Firestore channel subscribers count
-    saveChannelToFS(updated);
-    return updated;
+
+  // Optimistic UI update — real source of truth is Firestore (mySubscriptions + counter),
+  // updated via setSubscriptionFS below using a transaction.
+  mySubscriptions[was ? "delete" : "add"](chId);
+  channels = channels.map(c => {
+    if (String(c.id) !== chId) return c;
+    return { ...c, subscribed: !was, subscribers: was ? Math.max(0, c.subscribers - 1) : c.subscribers + 1 };
   });
+
+  if (!was) {
+    myPoints += 15;
+    myActions = [{ type:"sub", channel:ch.name, pts:15, time:new Date().toLocaleTimeString("ar") }, ...myActions.slice(0,19)];
+    showToast(`✅ اشتركت في ${ch.name} | +15 نقطة`);
+    addNotification("🔔", `اشتركت للتو في قناة ${ch.name}`);
+    if (!weeklySubIds.has(id)) {
+      weeklySubIds.add(id);
+      weeklySubCount++;
+      updateWeeklyChallenge();
+    }
+  } else {
+    myPoints = Math.max(0, myPoints - 15);
+    showToast(`❌ ألغيت الاشتراك في ${ch.name} | -15 نقطة`, "warn");
+    if (weeklySubIds.has(id)) {
+      weeklySubIds.delete(id);
+      weeklySubCount = Math.max(0, weeklySubCount - 1);
+      updateWeeklyChallenge();
+    }
+  }
   refresh();
   saveState();
   checkLevelUp(prevPoints, myPoints);
   if (document.getElementById("detail-overlay").classList.contains("open")) openDetail(id);
+
+  // Real write: transaction keeps the per-user subscription doc, the flattened
+  // follower doc, and the shared subscriber counter all in sync.
+  const ok = await setSubscriptionFS(id, !was);
+  if (!ok) {
+    // Roll back the optimistic update if the real write failed (e.g. offline).
+    mySubscriptions[was ? "add" : "delete"](chId);
+    channels = channels.map(c => {
+      if (String(c.id) !== chId) return c;
+      return { ...c, subscribed: was, subscribers: was ? c.subscribers + 1 : Math.max(0, c.subscribers - 1) };
+    });
+    refresh();
+    showToast("⚠️ تعذّر حفظ الاشتراك، حاول مرة أخرى", "warn");
+  }
 }
 
 // ===== LIKE =====
-function handleLike(id) {
+async function handleLike(id) {
+  const chId = String(id);
+  const ch = channels.find(c => String(c.id) === chId);
+  if (!ch) return;
+  const was = myLikedChannels.has(chId);
   const prevPoints = myPoints;
-  channels = channels.map(ch => {
-    if (ch.id !== id) return ch;
-    const was = ch.liked;
-    if (!was) {
-      myPoints += 5;
-      myActions = [{ type:"like", channel:ch.name, pts:5, time:new Date().toLocaleTimeString("ar") }, ...myActions.slice(0,19)];
-      showToast(`❤️ أعجبت بـ ${ch.name} | +5 نقاط`);
-      // Check like challenge
-      const weeklyLikes = myActions.filter(a => a.type === "like").length;
-      if (weeklyLikes === 10) {
-        const prev2 = myPoints;
-        myPoints += 50;
-        showToast("🎉 أتممت تحدي الإعجاب! +50 نقطة");
-        addNotification("❤️", "أتممت تحدي الإعجاب بـ 10 قنوات! +50 نقطة");
-        myActions = [{ type:"challenge", channel:"تحدي الإعجاب", pts:50, time:new Date().toLocaleTimeString("ar") }, ...myActions];
-        checkLevelUp(prev2, myPoints);
-      }
-    } else {
-      myPoints = Math.max(0, myPoints - 5);
-      showToast(`💔 أزلت الإعجاب عن ${ch.name} | -5 نقاط`, "warn");
-    }
-    const updated = { ...ch, liked: !was, likes: was ? ch.likes-1 : ch.likes+1 };
-    saveChannelToFS(updated);
-    return updated;
+
+  myLikedChannels[was ? "delete" : "add"](chId);
+  channels = channels.map(c => {
+    if (String(c.id) !== chId) return c;
+    return { ...c, liked: !was, likes: was ? Math.max(0, c.likes - 1) : c.likes + 1 };
   });
+
+  if (!was) {
+    myPoints += 5;
+    myActions = [{ type:"like", channel:ch.name, pts:5, time:new Date().toLocaleTimeString("ar") }, ...myActions.slice(0,19)];
+    showToast(`❤️ أعجبت بـ ${ch.name} | +5 نقاط`);
+    const weeklyLikes = myActions.filter(a => a.type === "like").length;
+    if (weeklyLikes === 10) {
+      const prev2 = myPoints;
+      myPoints += 50;
+      showToast("🎉 أتممت تحدي الإعجاب! +50 نقطة");
+      addNotification("❤️", "أتممت تحدي الإعجاب بـ 10 قنوات! +50 نقطة");
+      myActions = [{ type:"challenge", channel:"تحدي الإعجاب", pts:50, time:new Date().toLocaleTimeString("ar") }, ...myActions];
+      checkLevelUp(prev2, myPoints);
+    }
+  } else {
+    myPoints = Math.max(0, myPoints - 5);
+    showToast(`💔 أزلت الإعجاب عن ${ch.name} | -5 نقاط`, "warn");
+  }
   refresh();
   saveState();
   checkLevelUp(prevPoints, myPoints);
   if (document.getElementById("detail-overlay").classList.contains("open")) openDetail(id);
+
+  const ok = await setLikeFS(id, !was);
+  if (!ok) {
+    myLikedChannels[was ? "add" : "delete"](chId);
+    channels = channels.map(c => {
+      if (String(c.id) !== chId) return c;
+      return { ...c, liked: was, likes: was ? c.likes + 1 : Math.max(0, c.likes - 1) };
+    });
+    refresh();
+    showToast("⚠️ تعذّر حفظ الإعجاب، حاول مرة أخرى", "warn");
+  }
 }
 
 // ===== REGISTER =====
@@ -2942,6 +3174,10 @@ function refresh() {
   if (activeTab === "favorites") renderFavoritesTab();
   if (activeTab === "rewards") renderRewardsTab();
   updateFooterStats();
+  // Keep an open profile card in sync with newly-loaded real follower/mutual-exchange data.
+  if (pvChannelId != null && document.getElementById("profile-view")?.classList.contains("open")) {
+    openProfile(pvChannelId);
+  }
 }
 
 // ===== FIREBASE AUTH =====
@@ -3238,13 +3474,16 @@ function renderFavoritesTab() {
 let msgUnsubscribe = null;
 
 function openMessages() {
+  subscribeMsgSidebarFS();
   renderMsgSidebar();
   document.getElementById("messages-overlay").classList.add("open");
   document.getElementById("msg-count").style.display = "none";
-  unreadMsgCount = 0;
 }
 function closeMessages() {
   document.getElementById("messages-overlay").classList.remove("open");
+  if (msgConvUnsubscribe) { msgConvUnsubscribe(); msgConvUnsubscribe = null; }
+  if (msgSidebarUnsubscribe) { msgSidebarUnsubscribe(); msgSidebarUnsubscribe = null; }
+  if (window._msgOwnerUnsubscribe) { window._msgOwnerUnsubscribe(); window._msgOwnerUnsubscribe = null; }
 }
 function closeMessagesIfOutside(e) {
   if (e.target === document.getElementById("messages-overlay")) closeMessages();
@@ -3252,90 +3491,220 @@ function closeMessagesIfOutside(e) {
 
 function renderMsgSidebar() {
   const sidebar = document.getElementById("msgSidebar");
-  // Show all subscribed channels as conversations
-  const convChannels = channels.filter(c => c.subscribed || (messages[c.id] && messages[c.id].length > 0));
-  if (convChannels.length === 0) {
-    sidebar.innerHTML = `<div style="padding:16px;color:#888;font-size:12px;text-align:center">اشترك في قنوات لبدء المحادثة</div>`;
+  if (!window._currentUser) {
+    sidebar.innerHTML = `<div style="padding:16px;color:#888;font-size:12px;text-align:center">سجّل الدخول لرؤية رسائلك</div>`;
     return;
   }
-  sidebar.innerHTML = convChannels.map(c => {
-    const msgs = messages[c.id] || [];
-    const last = msgs[msgs.length-1];
+  // Real conversations only: ones I started as a visitor, plus — if I own a channel —
+  // ones other people started with me. No more "every subscribed channel is a thread".
+  const visitorItems = myConversationsAsVisitor.map(c => ({
+    convId: c.id, channelId: c.channelId, title: c.channelName,
+    sub: c.lastMessage || "ابدأ المحادثة...", asOwner: false,
+    unread: c.unreadForUser || 0,
+  }));
+  const ownerItems = myConversationsAsOwner.map(c => ({
+    convId: c.id, channelId: c.channelId, title: c.userName || "زائر",
+    sub: c.lastMessage || "", asOwner: true,
+    unread: c.unreadForOwner || 0,
+  }));
+  const items = [...visitorItems, ...ownerItems];
+  if (items.length === 0) {
+    sidebar.innerHTML = `<div style="padding:16px;color:#888;font-size:12px;text-align:center">اشترك في قناة وابدأ محادثة حقيقية معها</div>`;
+    return;
+  }
+  sidebar.innerHTML = items.map(it => {
+    const ch = channels.find(c => String(c.id) === String(it.channelId));
+    const avatarBg = ch?.cover || "#888";
+    const avatarTxt = ch?.avatar || "؟";
+    const isActive = activeConvOwnerView ? activeConvOwnerView === it.convId : (!it.asOwner && String(activeConvId) === String(it.channelId));
     return `
-    <div class="msg-channel-item${activeConvId===c.id?" active":""}" onclick="openConversation(${c.id})">
-      <div class="msg-ch-avatar" style="background:${c.cover}">${c.avatar}</div>
+    <div class="msg-channel-item${isActive?" active":""}" onclick="openConversation('${it.channelId}', ${it.asOwner ? `'${it.convId}'` : "null"})">
+      <div class="msg-ch-avatar" style="background:${avatarBg}">${avatarTxt}</div>
       <div class="msg-ch-info">
-        <div class="msg-ch-name">${c.name}</div>
-        <div class="msg-ch-last">${last ? last.text : "ابدأ المحادثة..."}</div>
+        <div class="msg-ch-name">${it.title}${it.asOwner ? " (زائر)" : ""}</div>
+        <div class="msg-ch-last">${it.sub}</div>
       </div>
+      ${it.unread > 0 ? `<div class="msg-unread-dot">${it.unread}</div>` : ""}
     </div>`;
   }).join("");
 }
 
-function openConversation(chId) {
+function openConversation(chId, ownerConvId = null) {
   activeConvId = chId;
+  activeConvOwnerView = ownerConvId;
   renderMsgSidebar();
+  activeConvMessages = [];
   renderMsgList();
+  subscribeActiveConversationFS(chId);
+  // Mark as read for whichever side is viewing.
+  const user = window._currentUser;
+  if (user && window._db) {
+    const cRef = ownerConvId
+      ? window._fsDoc(window._db, "conversations", ownerConvId)
+      : convRef(user.uid, chId);
+    window._fsSetDoc(cRef, ownerConvId ? { unreadForOwner: 0 } : { unreadForUser: 0 }, { merge: true }).catch(()=>{});
+  }
 }
 
 function renderMsgList() {
   const list = document.getElementById("msgList");
-  const ch = channels.find(c => c.id === activeConvId);
-  if (!ch) return;
-  const convMsgs = messages[activeConvId] || [];
-  if (convMsgs.length === 0) {
-    list.innerHTML = `<div style="text-align:center;color:#888;font-size:13px;padding:30px 16px">ابدأ محادثتك مع <strong>${ch.name}</strong> 👋</div>`;
+  const ch = channels.find(c => String(c.id) === String(activeConvId));
+  if (!ch && !activeConvOwnerView) {
+    list.innerHTML = `<div style="text-align:center;color:#888;font-size:13px;padding:30px 16px">اختر محادثة من القائمة</div>`;
     return;
   }
-  list.innerHTML = convMsgs.map(m => `
-    <div style="display:flex;justify-content:${m.sent?"flex-end":"flex-start"}">
-      <div class="msg-bubble ${m.sent?"sent":"received"}">
-        ${!m.sent?`<div class="msg-author">${ch.name}</div>`:""}
+  const user = window._currentUser;
+  const viewerIsOwner = !!activeConvOwnerView;
+  if (activeConvMessages.length === 0) {
+    const name = viewerIsOwner ? (myConversationsAsOwner.find(c => c.id === activeConvOwnerView)?.userName || "الزائر") : ch.name;
+    list.innerHTML = `<div style="text-align:center;color:#888;font-size:13px;padding:30px 16px">ابدأ محادثتك مع <strong>${name}</strong> 👋</div>`;
+    return;
+  }
+  list.innerHTML = activeConvMessages.map(m => {
+    // "Sent by me" depends on which side I'm viewing from — no more hardcoded sent:true.
+    const sentByMe = viewerIsOwner ? !!m.fromOwner : !m.fromOwner;
+    const authorLabel = m.fromOwner ? (ch?.name || "القناة") : (viewerIsOwner ? "الزائر" : "أنت");
+    const time = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleTimeString("ar", {hour:"2-digit",minute:"2-digit"}) : "";
+    return `
+    <div style="display:flex;justify-content:${sentByMe?"flex-end":"flex-start"}">
+      <div class="msg-bubble ${sentByMe?"sent":"received"}">
+        ${!sentByMe?`<div class="msg-author">${authorLabel}</div>`:""}
         ${m.text}
-        <div class="msg-time">${m.time}</div>
+        <div class="msg-time">${time}</div>
       </div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
   list.scrollTop = list.scrollHeight;
 }
 
-function sendMessage() {
+async function sendMessage() {
   const input = document.getElementById("msgInput");
   const text = input.value.trim();
   if (!text || !activeConvId) { if(!activeConvId) showToast("اختر محادثة أولاً","warn"); return; }
-  if (!messages[activeConvId]) messages[activeConvId] = [];
-  const time = new Date().toLocaleTimeString("ar", {hour:"2-digit",minute:"2-digit"});
-  messages[activeConvId].push({ text, sent: true, time });
+  if (!window._currentUser) { showToast("سجّل الدخول لإرسال رسالة", "warn"); return; }
+  const ch = channels.find(c => String(c.id) === String(activeConvId));
   input.value = "";
-  renderMsgList();
-  renderMsgSidebar();
-  saveState();
-  // Simulate auto-reply after 1.5s
-  const ch = channels.find(c => c.id === activeConvId);
-  const replies = [
-    "شكراً على تواصلك! 😊",
-    "سعيد بسماعك! تابع قناتنا للمزيد 🎬",
-    "مرحباً! هل يمكنني مساعدتك؟",
-    "شكراً لدعمك ❤️",
-    "نقدر تفاعلك الرائع! 🙌",
-  ];
-  setTimeout(() => {
-    if (!messages[activeConvId]) messages[activeConvId] = [];
-    messages[activeConvId].push({ text: replies[Math.floor(Math.random()*replies.length)], sent: false, time: new Date().toLocaleTimeString("ar",{hour:"2-digit",minute:"2-digit"}) });
-    if (activeConvId === activeConvId) renderMsgList();
-    renderMsgSidebar();
-    // Badge notification
-    unreadMsgCount++;
-    const badge = document.getElementById("msg-count");
-    if (!document.getElementById("messages-overlay").classList.contains("open")) {
-      badge.textContent = unreadMsgCount > 9 ? "9+" : unreadMsgCount;
-      badge.style.display = "flex";
-    }
-    addNotification("💬", `رد جديد من ${ch?.name || "قناة"}`);
-    saveState();
-  }, 1500);
+  // Real write to Firestore — onSnapshot (subscribeActiveConversationFS) will push the
+  // message back into activeConvMessages and re-render automatically. No fake auto-reply:
+  // a reply only ever appears if the channel owner is actually signed in and types one.
+  const ok = await sendRealMessage(activeConvId, ch, text);
+  if (!ok) {
+    input.value = text;
+    showToast("⚠️ تعذّر إرسال الرسالة", "warn");
+  }
 }
 
-// ===== REWARDS =====
+// ===== REAL CONVERSATIONS (conversations/{convId}/messages/{msgId}) =====
+// Replaces the old setTimeout() fake auto-reply. A conversation is between the
+// CURRENT signed-in user and one channel. convId is deterministic so both sides
+// (the visitor, and the channel owner if they ever sign in) land on the same thread.
+function buildConvId(userUid, channelId) {
+  return `${userUid}_${channelId}`;
+}
+
+function convRef(userUid, channelId) {
+  return window._fsDoc(window._db, "conversations", buildConvId(userUid, channelId));
+}
+
+async function ensureConversationFS(channelId, ch) {
+  const user = window._currentUser;
+  if (!user || !window._db) return null;
+  const cRef = convRef(user.uid, channelId);
+  try {
+    const snap = await window._fsGetDoc(cRef);
+    if (!snap.exists()) {
+      await window._fsSetDoc(cRef, {
+        userId: user.uid,
+        userName: user.displayName || "مستخدم",
+        channelId: String(channelId),
+        channelName: ch?.name || "",
+        ownerId: ch?.ownerId || null,
+        lastMessage: "",
+        lastMessageAt: window._fsServerTimestamp(),
+        unreadForUser: 0,
+        unreadForOwner: 0,
+      });
+    }
+  } catch(e) { console.warn("ensureConversation error", e); }
+  return cRef;
+}
+
+async function sendRealMessage(channelId, ch, text) {
+  const user = window._currentUser;
+  if (!user || !window._db) return false;
+  const cRef = await ensureConversationFS(channelId, ch);
+  if (!cRef) return false;
+  try {
+    const msgsRef = window._fsCollection(window._db, "conversations", buildConvId(user.uid, channelId), "messages");
+    // The sender is always either the visiting user or, if the current signed-in
+    // user happens to be the channel owner viewing their own inbox, the owner —
+    // fromOwner records which side actually sent it (no more "sent" boolean fiction).
+    const fromOwner = ch?.ownerId && ch.ownerId === user.uid;
+    await window._fsAddDoc(msgsRef, {
+      text,
+      fromOwner: !!fromOwner,
+      senderUid: user.uid,
+      createdAt: window._fsServerTimestamp(),
+    });
+    await window._fsSetDoc(cRef, {
+      lastMessage: text,
+      lastMessageAt: window._fsServerTimestamp(),
+      ...(fromOwner ? { unreadForUser: window._fsIncrement(1) } : { unreadForOwner: window._fsIncrement(1) }),
+    }, { merge: true });
+    return true;
+  } catch(e) { console.warn("sendRealMessage error", e); return false; }
+}
+
+// Live list of conversations for the sidebar: as a visitor, your own conversations;
+// as a channel owner, also the conversations other people started with your channel.
+function subscribeMsgSidebarFS() {
+  const user = window._currentUser;
+  if (!user || !window._db) return;
+  if (msgSidebarUnsubscribe) { msgSidebarUnsubscribe(); msgSidebarUnsubscribe = null; }
+  try {
+    const q = window._fsQuery(
+      window._fsCollection(window._db, "conversations"),
+      window._fsWhere("userId", "==", user.uid)
+    );
+    msgSidebarUnsubscribe = window._fsOnSnapshot(q, (snap) => {
+      myConversationsAsVisitor = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderMsgSidebar();
+    }, (err) => console.warn("sidebar snapshot error", err));
+  } catch(e) { console.warn("subscribeMsgSidebarFS error", e); }
+
+  // If this user owns any channel, also listen for conversations addressed to them.
+  if (registeredChannel?.ownerId === user.uid) {
+    try {
+      const q2 = window._fsQuery(
+        window._fsCollection(window._db, "conversations"),
+        window._fsWhere("ownerId", "==", user.uid)
+      );
+      window._msgOwnerUnsubscribe && window._msgOwnerUnsubscribe();
+      window._msgOwnerUnsubscribe = window._fsOnSnapshot(q2, (snap) => {
+        myConversationsAsOwner = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderMsgSidebar();
+      }, (err) => console.warn("owner sidebar snapshot error", err));
+    } catch(e) {}
+  }
+}
+
+function subscribeActiveConversationFS(channelId) {
+  const user = window._currentUser;
+  if (!user || !window._db) return;
+  if (msgConvUnsubscribe) { msgConvUnsubscribe(); msgConvUnsubscribe = null; }
+  // Figure out which conversation document this is: either the current user is the
+  // visitor (their own uid), or — if they are viewing their own channel's inbox —
+  // a specific visitor conversation picked from myConversationsAsOwner.
+  const convId = activeConvOwnerView ? activeConvOwnerView : buildConvId(user.uid, channelId);
+  const msgsRef = window._fsCollection(window._db, "conversations", convId, "messages");
+  const q = window._fsQuery(msgsRef, window._fsOrderBy("createdAt", "asc"));
+  msgConvUnsubscribe = window._fsOnSnapshot(q, (snap) => {
+    activeConvMessages = snap.docs.map(d => d.data());
+    renderMsgList();
+  }, (err) => console.warn("conversation snapshot error", err));
+}
+
+
 const REWARDS_DEF = [
   { id:"badge_fire",   name:"وسام النار 🔥",    icon:"🔥",  cost:100, desc:"يظهر على ملفك الشخصي",      color:"#FF6B35" },
   { id:"badge_star",   name:"وسام النجم ⭐",    icon:"🌟",  cost:150, desc:"شارة مميزة على قناتك",       color:"#FFD700" },
@@ -3381,23 +3750,37 @@ function claimReward(id) {
 }
 
 // ===== CHANNEL STATS CHART (for My Channel tab) =====
+// Real data only: starts empty and fills in day by day from channels/{id}/subscriberHistory,
+// which recordAllSubscriberSnapshots() writes once per day per channel. No invented past.
 function renderChannelStatsChart(ch) {
-  // Simulated monthly subscriber growth
-  const base = ch.subscribers;
-  const months = ["يناير","فبراير","مارس","أبريل","مايو","يونيو"];
-  const data = months.map((_, i) => Math.max(0, Math.round(base * (0.6 + i * 0.08 + Math.random() * 0.05))));
-  const max = Math.max(...data);
+  // Render a loading placeholder synchronously, then fill in with the real
+  // history once it's fetched (chart functions used to be fully synchronous
+  // with fake data; Firestore reads are async, so we re-render in place).
+  loadSubscriberHistoryFS(ch.id, 30).then(rows => {
+    const target = document.getElementById(`statsChart_${ch.id}`);
+    if (!target) return;
+    if (rows.length === 0) {
+      target.innerHTML = `<div style="color:#888;font-size:12px;text-align:center;padding:16px 0">لا توجد بيانات كافية بعد — سيبدأ الرسم بالظهور خلال الأيام القادمة 📊</div>`;
+      return;
+    }
+    const data = rows.map(r => r.subscribers);
+    const max = Math.max(...data, 1);
+    target.innerHTML = `
+      <div class="chart-bars">
+        ${rows.map((r,i) => `
+          <div class="chart-bar-wrap">
+            <div class="chart-val">${data[i] >= 1000 ? (data[i]/1000).toFixed(1)+"ك" : data[i]}</div>
+            <div class="chart-bar" style="height:${Math.round((data[i]/max)*90)}px"></div>
+            <div class="chart-label">${r.date.slice(5)}</div>
+          </div>`).join("")}
+      </div>`;
+  });
   return `
   <div class="stats-chart-wrap">
-    <div style="font-weight:800;font-size:15px;margin-bottom:4px;color:#FF6B35">📈 نمو المشتركين (محاكاة)</div>
-    <div style="color:#888;font-size:12px;margin-bottom:12px">آخر 6 أشهر</div>
-    <div class="chart-bars">
-      ${data.map((v,i) => `
-        <div class="chart-bar-wrap">
-          <div class="chart-val">${v >= 1000 ? (v/1000).toFixed(1)+"ك" : v}</div>
-          <div class="chart-bar" style="height:${Math.round((v/max)*90)}px"></div>
-          <div class="chart-label">${months[i].slice(0,3)}</div>
-        </div>`).join("")}
+    <div style="font-weight:800;font-size:15px;margin-bottom:4px;color:#FF6B35">📈 نمو المشتركين</div>
+    <div style="color:#888;font-size:12px;margin-bottom:12px">بيانات حقيقية مسجّلة يوميًا، تبدأ من اليوم</div>
+    <div id="statsChart_${ch.id}">
+      <div style="color:#888;font-size:12px;text-align:center;padding:16px 0">جاري التحميل...</div>
     </div>
   </div>`;
 }
@@ -3416,6 +3799,31 @@ function updateFooterStats() {
   if (el("footerLikesCount")) el("footerLikesCount").textContent = fmt(totalLikes);
 }
 
+// ===== REAL UNREAD-MESSAGE BADGE (live, not the old setTimeout fake reply) =====
+let unreadBadgeUnsubscribe = null;
+function subscribeUnreadBadgeFS() {
+  const user = window._currentUser;
+  if (!user || !window._db) return;
+  if (unreadBadgeUnsubscribe) { unreadBadgeUnsubscribe(); unreadBadgeUnsubscribe = null; }
+  const q = window._fsQuery(
+    window._fsCollection(window._db, "conversations"),
+    window._fsWhere("userId", "==", user.uid)
+  );
+  unreadBadgeUnsubscribe = window._fsOnSnapshot(q, (snap) => {
+    let total = 0;
+    snap.forEach(d => { total += d.data().unreadForUser || 0; });
+    unreadMsgCount = total;
+    const badge = document.getElementById("msg-count");
+    const overlayOpen = document.getElementById("messages-overlay").classList.contains("open");
+    if (total > 0 && !overlayOpen) {
+      badge.textContent = total > 9 ? "9+" : total;
+      badge.style.display = "flex";
+    } else {
+      badge.style.display = "none";
+    }
+  }, (err) => console.warn("unread badge snapshot error", err));
+}
+
 // ===== INIT =====
 loadTheme();
 
@@ -3426,6 +3834,7 @@ window._onAuthReady = async function(user) {
     updateVerifyBanner();
     await loadState();
     subscribeToChannels();
+    subscribeUnreadBadgeFS();
     refresh();
     // Welcome notification
     addNotification("👋", `مرحباً ${user.displayName || "بك"} في يوتيوب كنكت!`);
