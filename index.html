@@ -67,12 +67,16 @@
   </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { overflow-x: hidden; width: 100%; }
     body {
       min-height: 100vh;
       background: #0A0A0F;
       color: #fff;
       font-family: 'Cairo', 'Segoe UI', sans-serif;
       direction: rtl;
+      overflow-x: hidden;
+      width: 100%;
+      max-width: 100vw;
     }
     select option { background: #1A1A2E; }
     ::-webkit-scrollbar { width: 6px; }
@@ -93,6 +97,7 @@
       border-bottom: 1px solid rgba(255,255,255,0.07);
       padding: 0 24px;
       position: sticky; top: 0; z-index: 100;
+      width: 100%; box-sizing: border-box; overflow: hidden;
     }
     .header-inner {
       max-width: 1100px; margin: 0 auto;
@@ -130,8 +135,9 @@
     #tabs {
       background: #0D0D1A;
       border-bottom: 1px solid rgba(255,255,255,0.07);
+      width: 100%; box-sizing: border-box; overflow: hidden;
     }
-    .tabs-inner { max-width: 1100px; margin: 0 auto; display: flex; padding: 0 24px; overflow-x: auto; }
+    .tabs-inner { max-width: 1100px; margin: 0 auto; display: flex; padding: 0 24px; overflow-x: auto; width: 100%; box-sizing: border-box; }
     .tab-btn {
       background: none; border: none; color: #888;
       padding: 16px 20px; font-weight: 700; font-size: 14px;
@@ -146,7 +152,8 @@
       background: linear-gradient(135deg, rgba(255,107,53,0.15), rgba(156,39,176,0.15));
       border: 1px solid rgba(255,107,53,0.3);
       border-radius: 16px; padding: 20px 24px; margin-bottom: 32px;
-      display: flex; align-items: center; gap: 20; flex-wrap: wrap;
+      display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+      width: 100%; box-sizing: border-box; overflow: hidden;
     }
     .progress-banner .banner-icon { font-size: 40px; }
     .progress-banner .banner-info { flex: 1; min-width: 200px; }
@@ -361,29 +368,25 @@
     @media (max-width: 600px) {
       .points-grid-2, .earn-grid, .stats-grid-3 { grid-template-columns: 1fr; }
       .header-right .points-badge { display: none; }
-      .tab-btn { padding: 10px 8px; font-size: 11px; }
-      .channels-grid { grid-template-columns: 1fr; gap: 16px; }
+      .tab-btn { padding: 12px 10px; font-size: 12px; }
+      .channels-grid { grid-template-columns: 1fr; gap: 16px; width: 100%; }
       .rewards-grid { grid-template-columns: 1fr 1fr; }
-      main { padding: 12px 10px; }
+      main { padding: 12px 10px; width: 100%; max-width: 100%; }
       .card-body { padding: 34px 14px 14px; }
       .card-avatar { right: 14px; }
       .card-actions { gap: 6px; }
       .btn-sub { font-size: 13px; padding: 10px 14px; }
-      #header { padding: 10px 14px; }
-      /* Force full width on mobile */
-      body { overflow-x: hidden; }
-      #header, #tabs, main, .header-inner, .tabs-inner {
-        max-width: 100% !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-      }
-      .channels-grid { width: 100%; }
-      .channel-card { width: 100%; }
-      .progress-banner { padding: 14px 16px; margin-bottom: 20px; }
-      .tab-btn { padding: 12px 10px; font-size: 12px; }
+      #header { padding: 0 10px; }
+      .tabs-inner { padding: 0 8px; }
+      .header-inner { padding: 0; }
+      .channel-card { width: 100%; max-width: 100%; }
+      .progress-banner { padding: 14px 12px; margin-bottom: 16px; }
       .card-buttons { gap: 6px; padding: 0 10px 14px; }
       .btn-yt-sub { font-size: 12px; padding: 9px 10px; }
       .btn-share { padding: 9px 10px; font-size: 13px; }
+      /* Force no horizontal scroll */
+      html, body { overflow-x: hidden !important; max-width: 100vw !important; }
+      #header, #tabs, main { max-width: 100vw !important; overflow: hidden; }
     }
     /* ===== New additions ===== */
     .theme-toggle {
@@ -756,9 +759,10 @@
       border:1px solid rgba(255,107,53,0.25); border-radius:20px;
       padding:20px 24px; margin-bottom:24px;
       display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+      width:100%; box-sizing:border-box; overflow:hidden;
     }
-    .challenge-icon { font-size:40px; }
-    .challenge-info { flex:1; min-width:200px; }
+    .challenge-icon { font-size:40px; flex-shrink:0; }
+    .challenge-info { flex:1; min-width:0; }
     .challenge-title { font-weight:800; font-size:16px; margin-bottom:4px; }
     .challenge-desc { color:#aaa; font-size:13px; }
     .challenge-progress {
