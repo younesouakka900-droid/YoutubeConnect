@@ -2072,6 +2072,8 @@ function subscribeToChannels() {
         refresh();
         recordAllSubscriberSnapshots();
         refreshAllFollowerSets().then(refresh);
+        // Fetch real subscriber counts from YouTube API (once per session)
+        refreshAllRealSubscribers();
       } else {
         // Seed Firestore with default channels once, so every user sees the same shared data.
         seedDefaultChannelsFS();
@@ -2500,8 +2502,8 @@ function cardHTML(ch, featured=false) {
     </div>
     </div>
     <div style="padding:0 14px 16px;display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn-sub ${ch.subscribed?"active":"inactive"}" onclick="handleSubscribe(${ch.id})">
-        ${ch.subscribed?"✅ مشترك":"🔔 اشترك"}
+      <button class="btn-sub inactive" onclick="openYouTubeChannel(${ch.id})" style="background:linear-gradient(135deg,#FF0000,#cc0000)">
+        ▶ اشترك على يوتيوب
       </button>
       <button class="btn-like${ch.liked?" liked":""}" onclick="handleLike(${ch.id})">
         ${ch.liked?"❤️":"🤍"} ${ch.likes}
@@ -2559,7 +2561,7 @@ function openDetail(id) {
     <div style="margin-bottom:16px;font-size:13px;color:#888">📅 انضمت في ${ch.joined}</div>
     <a href="${ch.url}" target="_blank" rel="noopener" style="display:block;text-align:center;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px;color:inherit;text-decoration:none;font-weight:700;margin-bottom:10px">🎬 زيارة القناة على يوتيوب</a>
     <div style="display:flex;gap:10px;margin-bottom:20px">
-      <button class="btn-sub ${ch.subscribed?"active":"inactive"}" style="flex:1" onclick="handleSubscribe(${ch.id})">${ch.subscribed?"✅ مشترك":"🔔 اشترك"}</button>
+      <button class="btn-sub inactive" style="flex:1;background:linear-gradient(135deg,#FF0000,#cc0000)" onclick="openYouTubeChannel(${ch.id})">▶ اشترك على يوتيوب</button>
       <button class="btn-like${ch.liked?" liked":""}" onclick="handleLike(${ch.id})">${ch.liked?"❤️":"🤍"} ${ch.likes}</button>
       <button class="btn-share" onclick="shareChannel(${ch.id})">🔗</button>
       <button class="btn-share" onclick="openProfile(${ch.id});closeDetail()">👤</button>
@@ -2673,10 +2675,12 @@ function openProfile(id) {
     ? `<img src="${ch.avatarUrl}" onerror="this.parentElement.textContent='${ch.avatar}'">`
     : ch.avatar;
 
-  // Sub button
+  // Sub button - now opens YouTube directly
   const subBtn = document.getElementById("pvSubBtn");
-  subBtn.textContent = ch.subscribed ? "✅ مشترك" : "🔔 اشترك";
-  subBtn.className   = "pv-sub-btn" + (ch.subscribed ? " subbed" : "");
+  subBtn.textContent = "▶ اشترك على يوتيوب";
+  subBtn.className   = "pv-sub-btn";
+  subBtn.style.background = "linear-gradient(135deg,#FF0000,#cc0000)";
+  subBtn.onclick = () => openYouTubeChannel(id);
 
   // YT link
   document.getElementById("pvYtBtn").href = ch.url || "https://youtube.com";
@@ -2810,13 +2814,67 @@ function openProfile(id) {
 
 function pvToggleSub() {
   if (!pvChannelId) return;
-  handleSubscribe(pvChannelId);
-  // Update button
-  const ch = channels.find(c => c.id === pvChannelId);
+  openYouTubeChannel(pvChannelId);
+}
+
+// ===== OPEN YOUTUBE CHANNEL (replaces fake in-platform subscribe) =====
+function openYouTubeChannel(id) {
+  const ch = channels.find(c => String(c.id) === String(id));
   if (!ch) return;
-  const subBtn = document.getElementById("pvSubBtn");
-  subBtn.textContent = ch.subscribed ? "✅ مشترك" : "🔔 اشترك";
-  subBtn.className   = "pv-sub-btn" + (ch.subscribed ? " subbed" : "");
+  const url = ch.url || "https://youtube.com";
+  // Open YouTube — on mobile this will launch the YouTube app
+  window.open(url, "_blank", "noopener,noreferrer");
+  showToast("▶ تم فتح القناة على يوتيوب!", "success");
+}
+
+// ===== FETCH REAL SUBSCRIBER COUNT FROM YOUTUBE API =====
+// Extracts YouTube channel ID from a URL or handle, then hits the Data API
+// to get the real subscriberCount and updates Firestore + local state.
+async function refreshRealSubscribers(ch) {
+  if (!ch || !ch.url) return;
+  try {
+    const parsed = parseYtUrl(ch.url);
+    if (!parsed) return;
+    let apiUrl;
+    if (parsed.type === "id") {
+      apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${parsed.value}&key=${YT_API_KEY}`;
+    } else {
+      apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=statistics&forHandle=${encodeURIComponent(parsed.value)}&key=${YT_API_KEY}`;
+    }
+    const res = await fetch(apiUrl);
+    const json = await res.json();
+    if (!json.items || json.items.length === 0) return;
+    const realSubs = parseInt(json.items[0].statistics?.subscriberCount || 0);
+    if (!realSubs || realSubs === ch.subscribers) return;
+    // Update local state
+    channels = channels.map(c => String(c.id) === String(ch.id) ? { ...c, subscribers: realSubs } : c);
+    if (registeredChannel && String(registeredChannel.id) === String(ch.id)) {
+      registeredChannel = { ...registeredChannel, subscribers: realSubs };
+    }
+    // Persist real count to Firestore
+    if (window._db) {
+      window._fsSetDoc(
+        window._fsDoc(window._db, "channels", String(ch.id)),
+        { subscribers: realSubs },
+        { merge: true }
+      ).catch(() => {});
+    }
+    refresh();
+  } catch(e) { console.warn("refreshRealSubscribers error", e); }
+}
+
+// Refresh real subscriber counts for ALL channels (called once on load, rate-limited)
+let _subsRefreshDone = false;
+async function refreshAllRealSubscribers() {
+  if (_subsRefreshDone) return;
+  _subsRefreshDone = true;
+  // Stagger requests to avoid hitting API quota all at once
+  for (const ch of channels) {
+    if (ch.url) {
+      await refreshRealSubscribers(ch);
+      await new Promise(r => setTimeout(r, 300)); // 300ms between calls
+    }
+  }
 }
 
 function pvStartMsg() {
@@ -2933,59 +2991,12 @@ function renderMyChannel() {
   ${renderChannelStatsChart(live)}`;
 }
 
-// ===== SUBSCRIBE =====
+// ===== SUBSCRIBE (legacy stub - now handled by openYouTubeChannel) =====
+// The old handleSubscribe used to add fake platform-only subscribers.
+// All subscribe buttons now call openYouTubeChannel() instead, which sends
+// the user directly to YouTube. Subscriber counts come from the real YouTube API.
 async function handleSubscribe(id) {
-  const chId = String(id);
-  const ch = channels.find(c => String(c.id) === chId);
-  if (!ch) return;
-  const was = mySubscriptions.has(chId);
-  const prevPoints = myPoints;
-
-  // Optimistic UI update — real source of truth is Firestore (mySubscriptions + counter),
-  // updated via setSubscriptionFS below using a transaction.
-  mySubscriptions[was ? "delete" : "add"](chId);
-  channels = channels.map(c => {
-    if (String(c.id) !== chId) return c;
-    return { ...c, subscribed: !was, subscribers: was ? Math.max(0, c.subscribers - 1) : c.subscribers + 1 };
-  });
-
-  if (!was) {
-    myPoints += 15;
-    myActions = [{ type:"sub", channel:ch.name, pts:15, time:new Date().toLocaleTimeString("ar") }, ...myActions.slice(0,19)];
-    showToast(`✅ اشتركت في ${ch.name} | +15 نقطة`);
-    addNotification("🔔", `اشتركت للتو في قناة ${ch.name}`);
-    if (!weeklySubIds.has(id)) {
-      weeklySubIds.add(id);
-      weeklySubCount++;
-      updateWeeklyChallenge();
-    }
-  } else {
-    myPoints = Math.max(0, myPoints - 15);
-    showToast(`❌ ألغيت الاشتراك في ${ch.name} | -15 نقطة`, "warn");
-    if (weeklySubIds.has(id)) {
-      weeklySubIds.delete(id);
-      weeklySubCount = Math.max(0, weeklySubCount - 1);
-      updateWeeklyChallenge();
-    }
-  }
-  refresh();
-  saveState();
-  checkLevelUp(prevPoints, myPoints);
-  if (document.getElementById("detail-overlay").classList.contains("open")) openDetail(id);
-
-  // Real write: transaction keeps the per-user subscription doc, the flattened
-  // follower doc, and the shared subscriber counter all in sync.
-  const ok = await setSubscriptionFS(id, !was);
-  if (!ok) {
-    // Roll back the optimistic update if the real write failed (e.g. offline).
-    mySubscriptions[was ? "add" : "delete"](chId);
-    channels = channels.map(c => {
-      if (String(c.id) !== chId) return c;
-      return { ...c, subscribed: was, subscribers: was ? c.subscribers + 1 : Math.max(0, c.subscribers - 1) };
-    });
-    refresh();
-    showToast("⚠️ تعذّر حفظ الاشتراك، حاول مرة أخرى", "warn");
-  }
+  openYouTubeChannel(id);
 }
 
 // ===== LIKE =====
