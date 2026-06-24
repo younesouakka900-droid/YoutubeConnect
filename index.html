@@ -97,7 +97,7 @@
     .header-inner {
       max-width: 1100px; margin: 0 auto;
       display: flex; align-items: center; justify-content: space-between;
-      height: 64px;
+      height: 64px; width: 100%; box-sizing: border-box;
     }
     .logo { display: flex; align-items: center; gap: 12px; }
     .logo-icon {
@@ -140,7 +140,7 @@
     }
     .tab-btn.active { color: #FF6B35; border-bottom-color: #FF6B35; }
     /* Main */
-    main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; width: 100%; box-sizing: border-box; }
     /* Progress Banner */
     .progress-banner {
       background: linear-gradient(135deg, rgba(255,107,53,0.15), rgba(156,39,176,0.15));
@@ -362,14 +362,28 @@
       .points-grid-2, .earn-grid, .stats-grid-3 { grid-template-columns: 1fr; }
       .header-right .points-badge { display: none; }
       .tab-btn { padding: 10px 8px; font-size: 11px; }
-      .channels-grid { grid-template-columns: 1fr; gap: 20px; }
+      .channels-grid { grid-template-columns: 1fr; gap: 16px; }
       .rewards-grid { grid-template-columns: 1fr 1fr; }
-      main { padding: 16px 14px; }
+      main { padding: 12px 10px; }
       .card-body { padding: 34px 14px 14px; }
       .card-avatar { right: 14px; }
       .card-actions { gap: 6px; }
       .btn-sub { font-size: 13px; padding: 10px 14px; }
       #header { padding: 10px 14px; }
+      /* Force full width on mobile */
+      body { overflow-x: hidden; }
+      #header, #tabs, main, .header-inner, .tabs-inner {
+        max-width: 100% !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .channels-grid { width: 100%; }
+      .channel-card { width: 100%; }
+      .progress-banner { padding: 14px 16px; margin-bottom: 20px; }
+      .tab-btn { padding: 12px 10px; font-size: 12px; }
+      .card-buttons { gap: 6px; padding: 0 10px 14px; }
+      .btn-yt-sub { font-size: 12px; padding: 9px 10px; }
+      .btn-share { padding: 9px 10px; font-size: 13px; }
     }
     /* ===== New additions ===== */
     .theme-toggle {
@@ -396,7 +410,16 @@
       border: 1px solid rgba(255,255,255,0.08);
     }
     .card-actions { flex-wrap: wrap; }
-    .channel-card { cursor: pointer; }
+    .channel-card { cursor: default; }
+    .card-clickable { cursor: pointer; }
+    .card-buttons {
+      padding: 0 14px 16px;
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .btn-yt-sub {
+      background: linear-gradient(135deg,#FF0000,#cc0000) !important;
+      color: #fff !important;
+    }
     /* Detail modal */
     #detail-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.85);
@@ -2072,7 +2095,6 @@ function subscribeToChannels() {
         refresh();
         recordAllSubscriberSnapshots();
         refreshAllFollowerSets().then(refresh);
-        // Fetch real subscriber counts from YouTube API (once per session)
         refreshAllRealSubscribers();
       } else {
         // Seed Firestore with default channels once, so every user sees the same shared data.
@@ -2478,39 +2500,39 @@ function cardHTML(ch, featured=false) {
     : ch.avatar;
   return `
   <div class="channel-card" style="border-color:${featured?"#FF6B3550":"rgba(255,255,255,0.07)"}">
-    <div onclick="openDetail(${ch.id})" style="cursor:pointer">
-    <div class="card-cover" style="background:${coverBg}">
-      <div class="card-cat-badge">${ch.category}</div>
-      ${ch.isOwn ? '<div class="card-own-badge">⭐ قناتي</div>' : ""}
-    </div>
-    <div class="card-avatar-wrap">
-      <div class="card-avatar" style="background:linear-gradient(135deg,${ch.cover},${ch.cover}88);box-shadow:0 0 16px ${ch.cover}60;">${avatarHTML}</div>
-    </div>
-    <div class="card-body">
-      <div class="card-name-row">
-        <span class="card-name">${ch.name}</span>
-        <span class="card-level-badge" style="background:${lvl.color}">${lvl.name}</span>
+    <div class="card-clickable" onclick="openDetail(${ch.id})">
+      <div class="card-cover" style="background:${coverBg}">
+        <div class="card-cat-badge">${ch.category}</div>
+        ${ch.isOwn ? '<div class="card-own-badge">⭐ قناتي</div>' : ""}
       </div>
-      <div class="card-handle">${ch.handle}</div>
-      <p class="card-desc">${ch.description}</p>
-      ${badges.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${badges.map(b=>`<span class="badge-chip" title="${b.desc}">${b.icon} ${b.name}</span>`).join("")}</div>` : ""}
-      <div class="card-stats">
-        <div class="card-stat"><div class="stat-icon">👥</div><div class="stat-val">${formatNum(ch.subscribers)}</div><div class="stat-label">مشترك</div></div>
-        <div class="card-stat"><div class="stat-icon">🎬</div><div class="stat-val">${ch.videos}</div><div class="stat-label">فيديو</div></div>
-        <div class="card-stat"><div class="stat-icon">⭐</div><div class="stat-val">${ch.points}</div><div class="stat-label">نقطة</div></div>
+      <div class="card-avatar-wrap">
+        <div class="card-avatar" style="background:linear-gradient(135deg,${ch.cover},${ch.cover}88);box-shadow:0 0 16px ${ch.cover}60;">${avatarHTML}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-name-row">
+          <span class="card-name">${ch.name}</span>
+          <span class="card-level-badge" style="background:${lvl.color}">${lvl.name}</span>
+        </div>
+        <div class="card-handle">${ch.handle}</div>
+        <p class="card-desc">${ch.description}</p>
+        ${badges.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${badges.map(b=>`<span class="badge-chip" title="${b.desc}">${b.icon} ${b.name}</span>`).join("")}</div>` : ""}
+        <div class="card-stats">
+          <div class="card-stat"><div class="stat-icon">👥</div><div class="stat-val">${formatNum(ch.subscribers)}</div><div class="stat-label">مشترك</div></div>
+          <div class="card-stat"><div class="stat-icon">🎬</div><div class="stat-val">${ch.videos}</div><div class="stat-label">فيديو</div></div>
+          <div class="card-stat"><div class="stat-icon">⭐</div><div class="stat-val">${ch.points}</div><div class="stat-label">نقطة</div></div>
+        </div>
       </div>
     </div>
-    </div>
-    <div style="padding:0 14px 16px;display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn-sub inactive" onclick="openYouTubeChannel(${ch.id})" style="background:linear-gradient(135deg,#FF0000,#cc0000)">
+    <div class="card-buttons">
+      <button class="btn-sub btn-yt-sub" onclick="event.stopPropagation();openYouTubeChannel(${ch.id})">
         ▶ اشترك على يوتيوب
       </button>
-      <button class="btn-like${ch.liked?" liked":""}" onclick="handleLike(${ch.id})">
+      <button class="btn-like${ch.liked?" liked":""}" onclick="event.stopPropagation();handleLike(${ch.id})">
         ${ch.liked?"❤️":"🤍"} ${ch.likes}
       </button>
-      <button class="btn-share" onclick="shareChannel(${ch.id})" title="مشاركة">🔗</button>
-      <button class="btn-share" onclick="openProfile(${ch.id})" title="الملف الشخصي">👤</button>
-      <button class="btn-pin${pinnedChannels.has(ch.id)?" pinned":""}" onclick="togglePin(${ch.id})" title="مفضلة">📌</button>
+      <button class="btn-share" onclick="event.stopPropagation();shareChannel(${ch.id})" title="مشاركة">🔗</button>
+      <button class="btn-share" onclick="event.stopPropagation();openProfile(${ch.id})" title="الملف الشخصي">👤</button>
+      <button class="btn-pin${pinnedChannels.has(ch.id)?" pinned":""}" onclick="event.stopPropagation();togglePin(${ch.id})" title="مفضلة">📌</button>
     </div>
   </div>`;
 }
@@ -2561,7 +2583,7 @@ function openDetail(id) {
     <div style="margin-bottom:16px;font-size:13px;color:#888">📅 انضمت في ${ch.joined}</div>
     <a href="${ch.url}" target="_blank" rel="noopener" style="display:block;text-align:center;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px;color:inherit;text-decoration:none;font-weight:700;margin-bottom:10px">🎬 زيارة القناة على يوتيوب</a>
     <div style="display:flex;gap:10px;margin-bottom:20px">
-      <button class="btn-sub inactive" style="flex:1;background:linear-gradient(135deg,#FF0000,#cc0000)" onclick="openYouTubeChannel(${ch.id})">▶ اشترك على يوتيوب</button>
+      <button class="btn-sub ${ch.subscribed?"active":"inactive"}" style="flex:1" onclick="handleSubscribe(${ch.id})">${ch.subscribed?"✅ مشترك":"🔔 اشترك"}</button>
       <button class="btn-like${ch.liked?" liked":""}" onclick="handleLike(${ch.id})">${ch.liked?"❤️":"🤍"} ${ch.likes}</button>
       <button class="btn-share" onclick="shareChannel(${ch.id})">🔗</button>
       <button class="btn-share" onclick="openProfile(${ch.id});closeDetail()">👤</button>
@@ -2675,12 +2697,10 @@ function openProfile(id) {
     ? `<img src="${ch.avatarUrl}" onerror="this.parentElement.textContent='${ch.avatar}'">`
     : ch.avatar;
 
-  // Sub button - now opens YouTube directly
+  // Sub button
   const subBtn = document.getElementById("pvSubBtn");
-  subBtn.textContent = "▶ اشترك على يوتيوب";
-  subBtn.className   = "pv-sub-btn";
-  subBtn.style.background = "linear-gradient(135deg,#FF0000,#cc0000)";
-  subBtn.onclick = () => openYouTubeChannel(id);
+  subBtn.textContent = ch.subscribed ? "✅ مشترك" : "🔔 اشترك";
+  subBtn.className   = "pv-sub-btn" + (ch.subscribed ? " subbed" : "");
 
   // YT link
   document.getElementById("pvYtBtn").href = ch.url || "https://youtube.com";
@@ -2814,67 +2834,13 @@ function openProfile(id) {
 
 function pvToggleSub() {
   if (!pvChannelId) return;
-  openYouTubeChannel(pvChannelId);
-}
-
-// ===== OPEN YOUTUBE CHANNEL (replaces fake in-platform subscribe) =====
-function openYouTubeChannel(id) {
-  const ch = channels.find(c => String(c.id) === String(id));
+  handleSubscribe(pvChannelId);
+  // Update button
+  const ch = channels.find(c => c.id === pvChannelId);
   if (!ch) return;
-  const url = ch.url || "https://youtube.com";
-  // Open YouTube — on mobile this will launch the YouTube app
-  window.open(url, "_blank", "noopener,noreferrer");
-  showToast("▶ تم فتح القناة على يوتيوب!", "success");
-}
-
-// ===== FETCH REAL SUBSCRIBER COUNT FROM YOUTUBE API =====
-// Extracts YouTube channel ID from a URL or handle, then hits the Data API
-// to get the real subscriberCount and updates Firestore + local state.
-async function refreshRealSubscribers(ch) {
-  if (!ch || !ch.url) return;
-  try {
-    const parsed = parseYtUrl(ch.url);
-    if (!parsed) return;
-    let apiUrl;
-    if (parsed.type === "id") {
-      apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${parsed.value}&key=${YT_API_KEY}`;
-    } else {
-      apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=statistics&forHandle=${encodeURIComponent(parsed.value)}&key=${YT_API_KEY}`;
-    }
-    const res = await fetch(apiUrl);
-    const json = await res.json();
-    if (!json.items || json.items.length === 0) return;
-    const realSubs = parseInt(json.items[0].statistics?.subscriberCount || 0);
-    if (!realSubs || realSubs === ch.subscribers) return;
-    // Update local state
-    channels = channels.map(c => String(c.id) === String(ch.id) ? { ...c, subscribers: realSubs } : c);
-    if (registeredChannel && String(registeredChannel.id) === String(ch.id)) {
-      registeredChannel = { ...registeredChannel, subscribers: realSubs };
-    }
-    // Persist real count to Firestore
-    if (window._db) {
-      window._fsSetDoc(
-        window._fsDoc(window._db, "channels", String(ch.id)),
-        { subscribers: realSubs },
-        { merge: true }
-      ).catch(() => {});
-    }
-    refresh();
-  } catch(e) { console.warn("refreshRealSubscribers error", e); }
-}
-
-// Refresh real subscriber counts for ALL channels (called once on load, rate-limited)
-let _subsRefreshDone = false;
-async function refreshAllRealSubscribers() {
-  if (_subsRefreshDone) return;
-  _subsRefreshDone = true;
-  // Stagger requests to avoid hitting API quota all at once
-  for (const ch of channels) {
-    if (ch.url) {
-      await refreshRealSubscribers(ch);
-      await new Promise(r => setTimeout(r, 300)); // 300ms between calls
-    }
-  }
+  const subBtn = document.getElementById("pvSubBtn");
+  subBtn.textContent = ch.subscribed ? "✅ مشترك" : "🔔 اشترك";
+  subBtn.className   = "pv-sub-btn" + (ch.subscribed ? " subbed" : "");
 }
 
 function pvStartMsg() {
@@ -2991,10 +2957,60 @@ function renderMyChannel() {
   ${renderChannelStatsChart(live)}`;
 }
 
-// ===== SUBSCRIBE (legacy stub - now handled by openYouTubeChannel) =====
-// The old handleSubscribe used to add fake platform-only subscribers.
-// All subscribe buttons now call openYouTubeChannel() instead, which sends
-// the user directly to YouTube. Subscriber counts come from the real YouTube API.
+// ===== OPEN YOUTUBE CHANNEL =====
+function openYouTubeChannel(id) {
+  const ch = channels.find(c => String(c.id) === String(id));
+  if (!ch) return;
+  const url = ch.url || "https://youtube.com";
+  window.open(url, "_blank", "noopener,noreferrer");
+  showToast("▶ تم فتح القناة على يوتيوب!", "success");
+}
+
+// ===== FETCH REAL SUBSCRIBER COUNT FROM YOUTUBE API =====
+async function refreshRealSubscribers(ch) {
+  if (!ch || !ch.url) return;
+  try {
+    const parsed = parseYtUrl(ch.url);
+    if (!parsed) return;
+    let apiUrl;
+    if (parsed.type === "id") {
+      apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${parsed.value}&key=${YT_API_KEY}`;
+    } else {
+      apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=statistics&forHandle=${encodeURIComponent(parsed.value)}&key=${YT_API_KEY}`;
+    }
+    const res = await fetch(apiUrl);
+    const json = await res.json();
+    if (!json.items || json.items.length === 0) return;
+    const realSubs = parseInt(json.items[0].statistics?.subscriberCount || 0);
+    if (!realSubs || realSubs === ch.subscribers) return;
+    channels = channels.map(c => String(c.id) === String(ch.id) ? { ...c, subscribers: realSubs } : c);
+    if (registeredChannel && String(registeredChannel.id) === String(ch.id)) {
+      registeredChannel = { ...registeredChannel, subscribers: realSubs };
+    }
+    if (window._db) {
+      window._fsSetDoc(
+        window._fsDoc(window._db, "channels", String(ch.id)),
+        { subscribers: realSubs },
+        { merge: true }
+      ).catch(() => {});
+    }
+    refresh();
+  } catch(e) { console.warn("refreshRealSubscribers error", e); }
+}
+
+let _subsRefreshDone = false;
+async function refreshAllRealSubscribers() {
+  if (_subsRefreshDone) return;
+  _subsRefreshDone = true;
+  for (const ch of channels) {
+    if (ch.url) {
+      await refreshRealSubscribers(ch);
+      await new Promise(r => setTimeout(r, 350));
+    }
+  }
+}
+
+// ===== SUBSCRIBE (opens YouTube directly) =====
 async function handleSubscribe(id) {
   openYouTubeChannel(id);
 }
