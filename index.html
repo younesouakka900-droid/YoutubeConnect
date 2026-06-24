@@ -377,18 +377,24 @@
       .card-body { padding: 34px 14px 14px; }
       .card-avatar { right: 14px; }
       .card-actions { gap: 6px; }
-      #header { padding: 0 10px; }
+      #header { padding: 0 8px; }
       .tabs-inner { padding: 0 8px; }
-      .header-inner { padding: 0; gap: 6px; }
-      .header-right { gap: 6px; }
-      .btn-register-header { padding: 7px 10px; font-size: 11px; }
-      .logo-text { font-size: 16px; }
+      .header-inner { padding: 0; gap: 4px; }
+      .header-right { gap: 4px; }
+      /* إخفاء الأيقونة الحمراء والنص على الجوال */
+      .logo-icon { display: none; }
+      .logo-text { display: none; }
+      /* تصغير زر التسجيل */
+      .btn-register-header { padding: 7px 9px; font-size: 11px; }
+      .theme-toggle { width: 32px; height: 32px; font-size: 14px; }
+      .user-avatar-btn { width: 30px; height: 30px; font-size: 13px; }
       .channel-card { width: 100%; max-width: 100%; }
       .progress-banner { padding: 14px 12px; margin-bottom: 16px; }
       .card-buttons { gap: 6px; padding: 0 10px 14px; }
       .btn-yt-sub { font-size: 12px; padding: 9px 10px; }
       .btn-share { padding: 9px 10px; font-size: 13px; }
       html, body { overflow-x: hidden !important; max-width: 100vw !important; }
+      .hide-mobile { display: none !important; }
     }
     /* ===== New additions ===== */
     .theme-toggle {
@@ -1309,9 +1315,9 @@
         <span class="pts-label">نقطة</span>
         <span class="level-badge" id="headerLevel" style="background:#9E9E9E">مبتدئ</span>
       </div>
-      <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="تبديل الوضع الليلي/النهاري">🌙</button>
+      <button class="theme-toggle hide-mobile" id="themeToggleBtn" onclick="toggleTheme()" title="تبديل الوضع الليلي/النهاري">🌙</button>
       <!-- Messages Button -->
-      <div style="position:relative">
+      <div style="position:relative" class="hide-mobile">
         <button class="theme-toggle" onclick="openMessages()" title="الرسائل" style="font-size:18px">💬</button>
         <span id="msg-count" style="position:absolute;top:-4px;right:-4px;background:#E91E8C;color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;"></span>
       </div>
